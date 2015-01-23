@@ -15,22 +15,22 @@ repo = EntityRepository.newConfiguration()
         .create();
 ```
 
-The Person **entity** class:
+The Person **Entity** class:
 ```java
 @Description( "Everything we know about an employee" )
 public class Person extends Entity {
 
     /** Simple property of type String, value might be null. */
     @Nullable
-    protected Property<String>      name;
+    public Property<String>      name;
 
     /** Firstname, must not be null, defaults to "Ulli" is not initialized. */
     @DefaultValue("Ulli")
-    protected Property<String>      firstname;
+    public Property<String>      firstname;
 
-    /** Another simple property of type Date. */
+    /** Protected property of type Date. */
     @Nullable
-    protected Property<Date>        birthday;
+    protected Property<Date>     birthday;
 }
 ```
 
@@ -41,4 +41,11 @@ Person person = uow.createEntity( Person.class, null, (Person prototyp) -> {
         prototyp.name.set( "Model2" );
         return prototyp;
 });
+// persistently save changes in the backend store
+uow.commit();
+```
 
+**Access** properties of the newly created Entity:
+```java
+System.out.println( "The name of the person is " + person.name.get() );
+```
