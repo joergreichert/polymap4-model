@@ -6,19 +6,19 @@ This work is heavily inspired by [Qi4j](http://qi4j.org/).
 
 ## Example
 
-Creating and configuring a repository:
+Create and configure a **repository**:
 
 ```java
 repo = EntityRepository.newConfiguration()
         .setStore( new RecordStoreAdapter( new LuceneRecordStore() ) )
-        .setEntities( new Class[] {Employee.class} )
+        .setEntities( new Class[] {Person.class} )
         .create();
 ```
 
-The Employee entity class:
+The Person **entity** class:
 ```java
 @Description( "Everything we know about an employee" )
-public abstract class Person extends Entity {
+public class Person extends Entity {
 
     /** Simple property of type String, value might be null. */
     @Nullable
@@ -34,4 +34,11 @@ public abstract class Person extends Entity {
 }
 ```
 
-...
+**Create an entity** of type Person in the repository:
+```java
+UnitOfWork uow = repo.newUnitOfWork();
+Person person = uow.createEntity( Person.class, null, (Person prototyp) -> {
+        prototyp.name.set( "Model2" );
+        return prototyp;
+});
+
