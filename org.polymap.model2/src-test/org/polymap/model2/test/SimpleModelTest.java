@@ -23,7 +23,6 @@ import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
-import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.test.Employee.Rating;
 
 /**
@@ -116,12 +115,17 @@ public abstract class SimpleModelTest
     
 
     public void testEnum() throws Exception {
-        Employee employee = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
-            public Employee initialize( Employee proto ) throws Exception {
-                proto.rating.set( Rating.good );
-                return proto;
+        Employee employee = uow.createEntity( Employee.class, null, (Employee prototype) -> {
+                prototype.rating.set( Rating.good );
+                return prototype;
             }
-        } );
+        );
+//        Employee employee = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
+//            public Employee initialize( Employee proto ) throws Exception {
+//                proto.rating.set( Rating.good );
+//                return proto;
+//            }
+//        } );
         assertEquals( Rating.good, employee.rating.get() );
         assertSame( Rating.good, employee.rating.get() );
         uow.commit();
