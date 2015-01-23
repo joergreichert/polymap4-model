@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Geotools Store Backend
+Bundle-SymbolicName: org.polymap.model2.store.geotools
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.polymap.model2;bundle-version="1.0.0"

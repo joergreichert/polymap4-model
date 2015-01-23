@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Recordstore/Lucene Store Backend
+Bundle-SymbolicName: org.polymap.model2.store.recordstore
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ClassPath: lib/lucene-core-3.6.2.jar,
+ lib/lucene-queryparser-3.6.2.jar,
+ .
+Require-Bundle: org.polymap.model2;bundle-version="1.0.0"
