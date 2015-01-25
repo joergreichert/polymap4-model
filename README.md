@@ -1,8 +1,10 @@
-# Model2 - domain specific models in Java
+# Model2 - domain modeling for Java
 
-The Model2 System helps to work with domain specific models in Java. No pre-processors or new language elements, just the the standard Java platform. Everything you know from Java still applies and you can leverage both your experience and toolkits.
+The Model2 System helps to work with [domain models](http://en.wikipedia.org/wiki/Domain_model) in Java. It allows to  describe the various entities, their attributes, roles, and relationships, plus the constraints and concerns that govern the problem in pure Java syntax. No pre-processors or new language elements, just the standard Java platform. Everything you know from Java still applies and you can leverage both your experience and toolkits.
 
 This work is heavily inspired by [Qi4j](http://qi4j.org/).
+
+The runtime system allows to **plug-in** concrete implementation of **persistent store** backend, **query/index** backend, **locking** strategies and **cache** provider.
 
 ## Example
 
@@ -41,7 +43,7 @@ Person person = uow.createEntity( Person.class, null, (Person prototyp) -> {
         prototyp.name.set( "Model2" );
         return prototyp;
 });
-// persistently save changes in the backend store
+// persistently write changes to the backend store
 uow.commit();
 ```
 
