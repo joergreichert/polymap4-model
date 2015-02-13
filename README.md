@@ -12,8 +12,8 @@ Create and configure a **repository**:
 
 ```java
 repo = EntityRepository.newConfiguration()
-        .setStore( new RecordStoreAdapter( new LuceneRecordStore() ) )
-        .setEntities( new Class[] {Person.class} )
+        .store.set( new RecordStoreAdapter( new LuceneRecordStore() ) )
+        .entities.set( new Class[] {Person.class} )
         .create();
 ```
 
