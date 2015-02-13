@@ -26,9 +26,6 @@ import java.util.Set;
 
 import java.io.IOException;
 
-import com.google.common.collect.Iterators;
-import com.google.common.base.Function;
-
 import org.polymap.model2.Entity;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.grammar.BooleanExpression;
@@ -152,11 +149,13 @@ public class RecordStoreUnitOfWork
             return new AbstractCollection() {
                 @Override
                 public Iterator iterator() {
-                    return Iterators.transform( results.iterator(), new Function<IRecordState,Object>() {
-                        public Object apply( IRecordState input ) {
-                            return input.id();
-                        }
-                    });
+                    return results.stream().map( (IRecordState state) -> state.id() ).iterator();
+                    
+//                    return Iterators.transform( results.iterator(), new Function<IRecordState,Object>() {
+//                        public Object apply( IRecordState input ) {
+//                            return input.id();
+//                        }
+//                    });
                 }
                 @Override
                 public int size() {

@@ -14,11 +14,6 @@
  */
 package org.polymap.recordstore.test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.Log;
@@ -76,26 +71,26 @@ public abstract class AbstractRecordStoreTest
     }
 
 
-    public void tstThreaded() throws Exception {
-        final int loops = 250;
-        final int threads = 4;
-        createRecords( loops*threads );
-        
-        List<Future> results = new ArrayList();
-        for (int i=0; i<threads; i++) {
-            results.add( Polymap.executorService().submit( new Callable() {
-                public Object call() throws Exception {
-//                    readRecords( loops );
-                    queryRecords( loops );
-                    return new Object();
-                }
-            } ) );
-        }
-        // wait for results
-        for (Future result : results) {
-            result.get();
-        }
-    }
+//    public void tstThreaded() throws Exception {
+//        final int loops = 250;
+//        final int threads = 4;
+//        createRecords( loops*threads );
+//        
+//        List<Future> results = new ArrayList();
+//        for (int i=0; i<threads; i++) {
+//            results.add( Polymap.executorService().submit( new Callable() {
+//                public Object call() throws Exception {
+////                    readRecords( loops );
+//                    queryRecords( loops );
+//                    return new Object();
+//                }
+//            } ) );
+//        }
+//        // wait for results
+//        for (Future result : results) {
+//            result.get();
+//        }
+//    }
 
     
     protected void createRecords( int loops ) throws Exception {

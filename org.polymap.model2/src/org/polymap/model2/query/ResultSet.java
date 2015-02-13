@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2014-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -14,9 +14,8 @@
  */
 package org.polymap.model2.query;
 
+import java.util.Collections;
 import java.util.Iterator;
-
-import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Entity;
 
@@ -26,20 +25,27 @@ import org.polymap.model2.Entity;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public interface ResultSet<T extends Entity>
-        extends Iterable<T> {
+        extends Iterable<T>, AutoCloseable {
 
     public static final ResultSet EMPTY = new ResultSet() {
         @Override
         public Iterator iterator() {
-            return Iterators.emptyIterator();
+            return Collections.emptyIterator();
         }
         @Override
         public int size() {
             return 0;
+        }
+        @Override
+        public void close() {
         }
     };
     
     // ****************************************************
     
     public int size();
+
+    @Override
+    public void close();
+    
 }

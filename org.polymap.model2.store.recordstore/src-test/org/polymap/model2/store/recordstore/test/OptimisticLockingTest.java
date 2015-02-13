@@ -12,10 +12,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.model2.test;
+package org.polymap.model2.store.recordstore.test;
 
 import junit.framework.TestCase;
 
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
@@ -23,6 +24,11 @@ import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.OptimisticLocking;
+import org.polymap.model2.store.recordstore.RecordStoreAdapter;
+import org.polymap.model2.test.Employee;
+import org.polymap.model2.test.SimpleModelTest;
+import org.polymap.recordstore.IRecordStore;
+import org.polymap.recordstore.lucene.LuceneRecordStore;
 
 /**
  * The {@link SimpleModelTest} with {@link IRecordStore}/Lucene backend.
@@ -50,19 +56,17 @@ public class OptimisticLockingTest
     protected void setUp() throws Exception {
         store = new LuceneRecordStore();
         repo = EntityRepository.newConfiguration()
-                .setStore( new OptimisticLocking( new RecordStoreAdapter( store ) ) )
-                .setEntities( new Class[] {Employee.class} )
+                .store.set( new OptimisticLocking( new RecordStoreAdapter( store ) ) )
+                .entities.set( new Class[] {Employee.class} )
                 .create();
         uow = repo.newUnitOfWork();
     }
 
 
     public void testConcurrentModification() throws Exception {
-        Employee employee = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
-            public Employee initialize( Employee prototype ) throws Exception {
+        Employee employee = uow.createEntity( Employee.class, null, (Employee prototype) -> {
                 prototype.name.set( "samstag" );
                 return prototype;
-            }
         });
         uow.commit();
         

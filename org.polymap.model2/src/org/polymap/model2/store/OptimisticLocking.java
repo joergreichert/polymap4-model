@@ -23,10 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
-import org.polymap.core.runtime.IMessages;
-
 import org.polymap.model2.Entity;
-import org.polymap.model2.engine.Messages;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 
@@ -48,7 +45,7 @@ public class OptimisticLocking
 
     private static Log log = LogFactory.getLog( OptimisticLocking.class );
     
-    private static final IMessages          i18n = Messages.forPrefix( "OptimisticLocking" );
+//    private static final IMessages          i18n = Messages.forPrefix( "OptimisticLocking" );
     
     private StoreRuntimeContext             context;
     
@@ -101,7 +98,7 @@ public class OptimisticLocking
                     Integer storeVersion = storeVersions.get( entity.id() );
                     if (storeVersion != loadedVersion) {
                         throw new ConcurrentEntityModificationException( 
-                                i18n.get( "concurrentModificationExc", entity.id(), loadedVersion, storeVersion ), 
+                                "Entity has been modified be another UnitOfWork. (loadedVersion=" + loadedVersion + ", storedVersion=" + storeVersion + ")", 
                                 singletonList( entity ) );
                     }
                     prepared.add( entity );
@@ -127,7 +124,9 @@ public class OptimisticLocking
                 Integer storeVersion = storeVersions.put( entity.id(), newVersion );
                 if (storeVersion != loadedVersion) {
                     storeVersions.put( entity.id(), storeVersion );
-                    throw new ConcurrentEntityModificationException( i18n.get( "afterPrepareModificationExc", entity.id() ), singletonList( entity ) );
+                    throw new ConcurrentEntityModificationException( 
+                            "Entity has been modified AFTER prepare(): " + entity.id(), 
+                            singletonList( entity ) );
                 }
                 // update also laodedVersions for subsequent commits
                 loadedVersions.put( entity.id(), newVersion );                

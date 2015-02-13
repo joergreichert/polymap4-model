@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2011-2015, Polymap GmbH. All rights reserved.
+ * Copyright 2012, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,25 +12,24 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.recordstore;
+package org.polymap.model2.runtime.config;
 
-import java.util.stream.Stream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * 
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public interface ResultSet
-        extends Iterable<IRecordState>, AutoCloseable {
+@Retention( RetentionPolicy.RUNTIME )
+@Target( { ElementType.FIELD } )
+@Documented
+public @interface DefaultValue {
 
-    public IRecordState get( int index ) throws Exception;
+    public String value();
     
-    public int count();
-    
-    @Override
-    public void close();
-    
-    public Stream<IRecordState> stream();
-
 }

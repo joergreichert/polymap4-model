@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.io.IOException;
 
-import javax.cache.Cache;
+import javax.cache.Cache.Entry;
+import javax.cache.CacheManager;
+import javax.cache.configuration.MutableConfiguration;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -37,6 +39,7 @@ import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
+import org.polymap.model2.engine.LoadingCache.Loader;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
@@ -66,46 +69,15 @@ public class UnitOfWorkImpl
     /** Only set if this is the root UnitOfwork, or null if this is a nested instance. */
     protected StoreUnitOfWork               storeUow;
     
-    protected Cache<Object,Entity>          loaded;
+    protected LoadingCache<Object,Entity>   loaded;
     
-    protected Cache<String,Composite>       loadedMixins;
+    protected LoadingCache<String,Composite> loadedMixins;
     
-    /** Hard reference to Entities that must not be GCed from {@link #loaded} cache. */
+    /** Strong reference to Entities that must not be GCed from {@link #loaded} cache. */
     protected ConcurrentMap<Object,Entity>  modified;
     
     protected volatile Exception            prepareResult;
 
-    
-//    /**
-//     * 
-//     */
-//    static class CachedEntity
-//            implements EvictionAware {
-//        
-//        Entity          entity;
-//        
-//        Object          evictableDummy = new Object();
-//
-//        public CachedEntity( Entity entity ) {
-//            this.entity = entity;
-//        }
-//
-//        public EvictionListener newListener() {
-//            CachedEntityEvictionListener result = new CachedEntityEvictionListener();
-//            result.entity = entity;
-//            return result;
-//        }
-//        
-//        static class CachedEntityEvictionListener
-//                implements EvictionListener {
-//            
-//            Entity      entity;   
-//
-//            public void onEviction() {
-//            }
-//        }
-//    }
-    
     
     protected UnitOfWorkImpl( EntityRepositoryImpl repo, StoreUnitOfWork suow ) {
         this.repo = repo;
@@ -113,8 +85,10 @@ public class UnitOfWorkImpl
         assert repo != null : "repo must not be null.";
         assert suow != null : "suow must not be null.";
 
-        this.loaded = repo.getConfig().newCache();
-        this.loadedMixins = repo.getConfig().newCache();
+        MutableConfiguration cacheConfig = new MutableConfiguration();
+        CacheManager cacheManager = repo.getConfig().cacheManager.get();
+        this.loaded = LoadingCache.create( cacheManager, cacheConfig );
+        this.loadedMixins = LoadingCache.create( cacheManager, cacheConfig );
         this.modified = new ConcurrentHashMap( 1024, 0.75f, 4 );
         
 //        // check evicted entries and re-insert if modified
@@ -157,8 +131,8 @@ public class UnitOfWorkImpl
         T result = repo.buildEntity( state, entityClass, this );
         repo.contextOfEntity( result ).raiseStatus( EntityStatus.CREATED );
 
-        Entity old = loaded.putIfAbsent( id, result );
-        if (old != null) {
+        boolean ok = loaded.putIfAbsent( id, result );
+        if (!ok) {
             throw new ModelRuntimeException( "ID of newly created Entity already exists." );
         }
         modified.put( id, result );
@@ -184,7 +158,7 @@ public class UnitOfWorkImpl
         assert entityClass != null;
         assert id != null;
         checkOpen();
-        T result = (T)loaded.get( id, new EntityCacheLoader() {
+        T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
                 CompositeState state = storeUow.loadEntityState( id, entityClass );
                 return state != null ? repo.buildEntity( state, entityClass, UnitOfWorkImpl.this ) : null;
@@ -206,7 +180,7 @@ public class UnitOfWorkImpl
             throw new RuntimeException( "Entity is already modified in this UnitOfWork." );
         }
         // build Entity instance
-        return (T)loaded.get( id, new EntityCacheLoader() {
+        return (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
                 return repo.buildEntity( compositeState, entityClass, UnitOfWorkImpl.this );
             }
@@ -220,7 +194,7 @@ public class UnitOfWorkImpl
         checkOpen();
         
         String key = Joiner.on( '_' ).join( entity.id().toString(), mixinClass.getName() );
-        return (T)loadedMixins.get( key, new MixinCacheLoader() {
+        return (T)loadedMixins.get( key, new Loader<String,Composite>() {
             public Composite load( String _key ) throws RuntimeException {
                 return repo.buildMixin( entity, mixinClass, UnitOfWorkImpl.this );
             }
@@ -244,8 +218,8 @@ public class UnitOfWorkImpl
                 // are store for subsequent calls to iterator(); however, creating and filtering
                 // Entities is done on-the-fly to avoid loading all Entities in memory at same time
 
-                // XXX without this copy the collection is empty on second access
-                // iterate to avoid call of size()
+                // XXX without this copy the collection is empty on second access;
+                // iterate instead of addAll() to avoid call of size()
                 final Collection ids = new ArrayList( 1024 );
                 for (Object id : storeUow.executeQuery( this ) ) {
                     ids.add( id );
@@ -322,6 +296,9 @@ public class UnitOfWorkImpl
                         }
                         return size;
                     }
+                    @Override
+                    public void close() {
+                    }
                 };
             }
         };
@@ -386,8 +363,8 @@ public class UnitOfWorkImpl
         prepareResult = null;
         
         // reset Entity status
-        for (Entity entity : loaded.values()) {
-            repo.contextOfEntity( entity ).resetStatus( EntityStatus.LOADED );
+        for (Entry<Object,Entity> entry : loaded) {
+            repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
         modified.clear();
     }
@@ -431,38 +408,6 @@ public class UnitOfWorkImpl
     protected final void checkOpen() throws ModelRuntimeException {
         if (!isOpen()) {
             throw new IllegalStateException( "UnitOfWork is closed." );
-        }
-    }
-    
-    
-    /**
-     * 
-     */
-    abstract class EntityCacheLoader
-            implements CacheLoader<Object,Entity,RuntimeException> {
-
-        protected Entity        result;
-        
-        public int size() throws RuntimeException {
-            // XXX rough approximation (count Composite props)
-            return 1024;
-//            return Math.max( 1024, result.info().getProperties().size() * 100 );
-        }
-    }
-
-    
-    /**
-     * 
-     */
-    abstract class MixinCacheLoader
-            implements CacheLoader<String,Composite,RuntimeException> {
-
-        protected Composite     result;
-        
-        public int size() throws RuntimeException {
-            // XXX rough approximation (count Composite props)
-            return 1024;
-//            return Math.max( 1024, result.info().getProperties().size() * 100 );
         }
     }
     

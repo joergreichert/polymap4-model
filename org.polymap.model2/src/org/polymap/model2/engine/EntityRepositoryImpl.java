@@ -30,7 +30,6 @@ import org.polymap.model2.Entity;
 import org.polymap.model2.query.Expressions;
 import org.polymap.model2.runtime.CompositeInfo;
 import org.polymap.model2.runtime.EntityRepository;
-import org.polymap.model2.runtime.EntityRepositoryConfiguration;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.PropertyInfo;
@@ -50,13 +49,13 @@ public class EntityRepositoryImpl
 
     private static Log log = LogFactory.getLog( EntityRepositoryImpl.class );
 
-    private EntityRepositoryConfiguration               config;
+    private Configuration               config;
     
     /** Infos of Entities, Mixins, Composite properties. */
     private Map<Class<? extends Composite>,CompositeInfo> infos = new HashMap();
     
     
-    public EntityRepositoryImpl( final EntityRepositoryConfiguration config ) {
+    public EntityRepositoryImpl( final Configuration config ) {
         this.config = config;
         
         // init store
@@ -65,7 +64,7 @@ public class EntityRepositoryImpl
         // init infos
         log.debug( "Initialializing Composite types:" );
         Queue<Class<? extends Composite>> queue = new LinkedList();
-        queue.addAll( Arrays.asList( config.getEntities() ) );
+        queue.addAll( Arrays.asList( config.entities.get() ) );
         
         while (!queue.isEmpty()) {
             Class<? extends Composite> type = queue.poll();
@@ -101,11 +100,11 @@ public class EntityRepositoryImpl
 
     
     public StoreSPI getStore() {
-        return config.getStore();
+        return config.store.get();
     }
 
     
-    public EntityRepositoryConfiguration getConfig() {
+    public Configuration getConfig() {
         return config;
     }
 

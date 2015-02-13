@@ -14,17 +14,19 @@
  */
 package org.polymap.model2.test;
 
-import org.apache.commons.lang3.time.StopWatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.google.common.base.Stopwatch;
 
 /**
  * 
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class Timer
-        extends StopWatch {
+public class Timer {
 
     private static Log log = LogFactory.getLog( Timer.class );
 
@@ -34,14 +36,21 @@ public class Timer
         return result;
     }
 
+    // instance *******************************************
+    
+    private Stopwatch       watch = Stopwatch.createUnstarted();
+    
+    public void start() {
+        if (watch.isRunning()) {
+            watch.reset().start();
+        }
+        else {
+            watch.start();
+        }
+    }
+
     public long elapsedTime() {
-        try {
-            split();
-            return getSplitTime();
-        }
-        finally {
-            unsplit();
-        }
+        return watch.elapsed( TimeUnit.MILLISECONDS );
     }
     
 }

@@ -21,7 +21,7 @@ import java.util.List;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
-import javax.cache.Cache;
+import javax.cache.configuration.MutableConfiguration;
 
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
@@ -41,6 +41,7 @@ import org.polymap.model2.PropertyBase;
 import org.polymap.model2.PropertyConcern;
 import org.polymap.model2.PropertyConcernBase;
 import org.polymap.model2.engine.EntityRepositoryImpl.EntityRuntimeContextImpl;
+import org.polymap.model2.engine.LoadingCache.Loader;
 import org.polymap.model2.runtime.CompositeInfo;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
@@ -64,11 +65,12 @@ public final class InstanceBuilder {
 
     private static Field                        concernDelegateField;
     
-    protected static Cache<Field,List<Class>>   concerns;
+    protected static LoadingCache<Field,List<Class>>   concerns;
 
     static {
         try {
-            concerns = 
+            SimpleCacheManager cacheManager = new SimpleCacheManager();
+            concerns = LoadingCache.create( cacheManager, new MutableConfiguration() );
                     
             contextField = Composite.class.getDeclaredField( "context" );
             contextField.setAccessible( true );
@@ -231,8 +233,8 @@ public final class InstanceBuilder {
 
 
     protected Iterable<PropertyConcernBase> fieldConcerns( final Field field, final PropertyBase prop ) throws Exception {
-        List<Class> concernTypes = concerns.get( field, new CacheLoader<Field,List<Class>,Exception>() {
-            public List<Class> load( Field key ) throws Exception {
+        List<Class> concernTypes = concerns.get( field, new Loader<Field,List<Class>>() {
+            public List<Class> load( Field key ) {
                 List<Class> result = new ArrayList();
                 // Class concerns
                 Concerns ca = field.getDeclaringClass().getAnnotation( Concerns.class );
@@ -248,11 +250,7 @@ public final class InstanceBuilder {
                 }
                 return result;
             }
-            @Override
-            public int size() throws Exception {
-                return 1024;
-            }
-        } );
+        });
         
         return Iterables.transform( concernTypes, new Function<Class,PropertyConcernBase>() {
             public PropertyConcernBase apply( Class concernType ) {

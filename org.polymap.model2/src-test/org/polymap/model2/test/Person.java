@@ -41,7 +41,7 @@ public abstract class Person
 
     @Nullable
     @Concerns( InvocationCountConcern.class )
-    protected Property<String>      name;
+    public Property<String>         name;
 
     /** Defaults to "Ulli". Not Nullable. */
     @DefaultValue("Ulli")

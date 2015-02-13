@@ -2,35 +2,26 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Domain Model System
 Bundle-SymbolicName: org.polymap.model2;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 3.0.0.qualifier
 Bundle-Activator: org.polymap.model2.Model2Plugin
 Bundle-Vendor: polymap.org
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
-Require-Bundle: org.eclipse.core.runtime;bundle-version="3.10.0"
+Require-Bundle: org.eclipse.core.runtime;bundle-version="3.10.0",
+ org.polymap.core;bundle-version="4.0.0";resolution:=optional
 Bundle-ClassPath: .,
- lib/commons-collections4-4.0.jar,
  lib/commons-io-2.4.jar,
  lib/commons-lang3-3.3.2.jar,
- lib/commons-logging-1.2.jar,
  lib/guava-18.0.jar,
  lib/cache-api-1.0.0.jar
-Export-Package: org.apache.commons.collections4,
- org.apache.commons.collections4.bag,
- org.apache.commons.collections4.bidimap,
- org.apache.commons.collections4.collection,
- org.apache.commons.collections4.comparators,
- org.apache.commons.collections4.functors,
- org.apache.commons.collections4.iterators,
- org.apache.commons.collections4.keyvalue,
- org.apache.commons.collections4.list,
- org.apache.commons.collections4.map,
- org.apache.commons.collections4.queue,
- org.apache.commons.collections4.sequence,
- org.apache.commons.collections4.set,
- org.apache.commons.collections4.splitmap,
- org.apache.commons.collections4.trie,
- org.apache.commons.collections4.trie.analyzer,
+Export-Package: javax.cache,
+ javax.cache.annotation,
+ javax.cache.configuration,
+ javax.cache.event,
+ javax.cache.expiry,
+ javax.cache.integration,
+ javax.cache.management,
+ javax.cache.processor,
  org.apache.commons.io,
  org.apache.commons.io.comparator,
  org.apache.commons.io.filefilter,
@@ -49,12 +40,13 @@ Export-Package: org.apache.commons.collections4,
  org.apache.commons.lang3.text.translate,
  org.apache.commons.lang3.time,
  org.apache.commons.lang3.tuple,
- org.apache.commons.logging,
  org.polymap.model2,
  org.polymap.model2.engine,
  org.polymap.model2.query,
  org.polymap.model2.query.grammar,
  org.polymap.model2.runtime,
+ org.polymap.model2.runtime.config,
  org.polymap.model2.runtime.event,
  org.polymap.model2.store,
  org.polymap.model2.test
+Import-Package: org.apache.commons.logging

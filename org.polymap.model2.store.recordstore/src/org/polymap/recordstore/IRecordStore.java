@@ -34,11 +34,13 @@ package org.polymap.recordstore;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  * @since 3.1
  */
-public interface IRecordStore {
+public interface IRecordStore
+        extends AutoCloseable {
     
     /**
      * Closes this store. Dispose any resources.
      */
+    @Override
     public void close();
     
     public boolean isClosed();

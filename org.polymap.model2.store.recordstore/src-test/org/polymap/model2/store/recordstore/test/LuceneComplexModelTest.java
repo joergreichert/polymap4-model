@@ -14,12 +14,16 @@
  */
 package org.polymap.model2.store.recordstore.test;
 
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.runtime.EntityRepository;
+import org.polymap.model2.store.recordstore.RecordStoreAdapter;
 import org.polymap.model2.test.Company;
 import org.polymap.model2.test.ComplexModelTest;
 import org.polymap.model2.test.Employee;
+import org.polymap.recordstore.IRecordStore;
+import org.polymap.recordstore.lucene.LuceneRecordStore;
 
 /**
  * The {@link ComplexModelTest} with {@link IRecordStore}/Lucene backend.
@@ -43,8 +47,8 @@ public class LuceneComplexModelTest
         super.setUp();
         store = new LuceneRecordStore();
         repo = EntityRepository.newConfiguration()
-                .setStore( new RecordStoreAdapter( store ) )
-                .setEntities( new Class[] {Employee.class, Company.class} )
+                .store.set( new RecordStoreAdapter( store ) )
+                .entities.set( new Class[] {Employee.class, Company.class} )
                 .create();
         uow = repo.newUnitOfWork();
     }

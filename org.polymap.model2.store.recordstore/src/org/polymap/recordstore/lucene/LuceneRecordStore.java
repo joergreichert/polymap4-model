@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2011, 2012 Polymap GmbH. All rights reserved.
+ * Copyright (C) 2011-2015 Polymap GmbH. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -17,8 +17,11 @@ package org.polymap.recordstore.lucene;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Timer;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -30,6 +33,9 @@ import java.io.IOException;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheLoaderException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -59,8 +65,11 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.DummyConcurrentLock;
 import org.apache.lucene.util.Version;
 
-import com.google.common.cache.CacheLoader;
-
+import org.polymap.model2.runtime.config.ConfigurationFactory;
+import org.polymap.model2.runtime.config.DefaultBoolean;
+import org.polymap.model2.runtime.config.DefaultDouble;
+import org.polymap.model2.runtime.config.Property;
+import org.polymap.model2.test.Timer;
 import org.polymap.recordstore.BaseRecordStore;
 import org.polymap.recordstore.IRecordState;
 import org.polymap.recordstore.IRecordStore;
@@ -86,42 +95,86 @@ public final class LuceneRecordStore
     /** The Lucene version this store is working with. */
     public static final Version     VERSION = Version.LUCENE_36;
 
-    /** Default: 10% of HEAP; 32M is good for 512M RAM and merge size 16MB (Lucene 3). */
-    public static final double      MAX_RAMBUFFER_SIZE = 10d / 100d * Runtime.getRuntime().maxMemory() / 1000000;
-    
-    public static final double      MAX_MERGE_SIZE = 24;
-    
-    public static final double      MAX_DELETED_PERCENT = 10;
+//    /** Default: 10% of HEAP; 32M is good for 512M RAM and merge size 16MB (Lucene 3). */
+//    public static final double      MAX_RAMBUFFER_SIZE = 10d / 100d * Runtime.getRuntime().maxMemory() / 1000000;
+//    
+//    public static final double      MAX_MERGE_SIZE = 24;
+//    
+//    public static final double      MAX_DELETED_PERCENT = 10;
+
     
     /**
-     * The {@link ExecutorService} used by the {@link #searcher}.
-     * <p/>
-     * XXX This is not the {@link Polymap#executorService()}, as this used Eclipse
-     * Jobs, which results in deadlocks.
+     * Returns a newly created configuration with default setting. 
      */
-    private static ExecutorService  executor = Polymap.executorService();
+    public static Configuration newConfiguration() {
+        return ConfigurationFactory.create( Configuration.class );
+    }
     
-//    static {
-//        int procs = Runtime.getRuntime().availableProcessors();
-//        ThreadFactory threadFactory = new ThreadFactory() {
-//            volatile int threadNumber = 0;
-//            public Thread newThread( Runnable r ) {
-//                String prefix = "Lucene-searcher-";
-//                Thread t = new Thread( r, prefix + threadNumber++ );
-//                t.setDaemon( false );
-//                //t.setPriority( Thread.NORM_PRIORITY - 1 );
-//                return t;
-//            }
-//        };
-//        executor = new ThreadPoolExecutor( 0, 100,
-//                60L, TimeUnit.SECONDS,
-//                new SynchronousQueue<Runnable>(),
-//                threadFactory );
-//        ((ThreadPoolExecutor)executor).allowCoreThreadTimeOut( true );        
-//    }
+    /**
+     * 
+     */
+    public static class Configuration {
+
+        public Property<Configuration,File>             indexDir;
+
+        @DefaultBoolean(false)
+        public Property<Configuration,Boolean>          clean;
+        
+        /**
+         * The ExecutorService to be used for Lucene queries.
+         */
+        public Property<Configuration,ExecutorService>  executor;
+        
+        /** 
+         * Should be around 10% of HEAP; 32M is good for 512M RAM and merge size 16MB (Lucene 3). 
+         */
+        @DefaultDouble(32)
+        public Property<Configuration,Double>           maxRamBufferSize;
+        
+        @DefaultDouble(24)
+        public Property<Configuration,Double>           maxMergeSize;
+        
+        @DefaultDouble(10)
+        public Property<Configuration,Double>           maxDeletedPercent;
+        
+        public Property<Configuration,CacheManager>     documentCache;
+        
+        public LuceneRecordStore create() throws IOException {
+            return new LuceneRecordStore( this );
+        }
+        
+    }
+    
+    
+    /**
+     * The default {@link ExecutorService} used by the {@link #searcher} if no
+     * executor if specified in the config.
+     */
+    private static ExecutorService  defaultExecutor;
+    
+    static {
+        //int procs = Runtime.getRuntime().availableProcessors();
+        ThreadFactory threadFactory = new ThreadFactory() {
+            volatile int threadNumber = 0;
+            public Thread newThread( Runnable r ) {
+                String prefix = "Lucene-searcher-";
+                Thread t = new Thread( r, prefix + threadNumber++ );
+                t.setDaemon( false );
+                //t.setPriority( Thread.NORM_PRIORITY - 1 );
+                return t;
+            }
+        };
+        defaultExecutor = new ThreadPoolExecutor( 0, 100,
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<Runnable>(),
+                threadFactory );
+        ((ThreadPoolExecutor)defaultExecutor).allowCoreThreadTimeOut( true );        
+    }
     
     
     // instance *******************************************
+    
+    private Configuration           config;
     
     private Directory               directory;
 
@@ -129,7 +182,7 @@ public final class LuceneRecordStore
     
     private Cache<Object,Document>  cache = null;
     
-    private CacheLoader<Object,Document,Exception> loader = new DocumentLoader();
+    private CacheLoader<Object,Document> loader = new DocumentLoader();
     
     /** 
      * Maps docnum into record id; this helps to find a cached record
@@ -137,24 +190,22 @@ public final class LuceneRecordStore
      */
     private Cache<Integer,Object>   doc2id = null;
 
+    private ExecutorService         executor = defaultExecutor;
+    
     IndexSearcher                   searcher;
 
     IndexReader                     reader;
     
     /** Prevents {@link #reader} close/reopen by {@link LuceneUpdater} while in use. */
-    ReadWriteLock                   lock; /*= new ReentrantReadWriteLock();*/
+    ReadWriteLock                   lock;
 
     ValueCoders                     valueCoders = new ValueCoders( this );
     
-    
-    /**
-     * Creates a new store for the given filesystem directory. 
-     * 
-     * @param indexDir The directory to hold the store files.
-     * @param clean
-     * @throws IOException
-     */
-    public LuceneRecordStore( File indexDir, boolean clean ) throws IOException {
+
+    public LuceneRecordStore( Configuration config ) throws IOException {
+        this.config = config;
+        
+        File indexDir = config.indexDir.get();
         if (!indexDir.exists()) {
             indexDir.mkdirs();
         }
@@ -166,7 +217,7 @@ public final class LuceneRecordStore
                 && FileUtils.sizeOfDirectory( indexDir ) < 100*1024*1024) {
             try {
                 directory = new MMapDirectory( indexDir, null );
-                open( clean );
+                open( config.clean.get() );
             }
             catch (OutOfMemoryError e) {
                 log.info( "Unable to mmap index: falling back to default.");
@@ -175,13 +226,40 @@ public final class LuceneRecordStore
         
         if (searcher == null) {
             directory = FSDirectory.open( indexDir );
-            open( clean );
+            open( config.clean.get() );
         }
 
+        // init cache (if configured)
+        CacheManager cacheManager = config.documentCache.get();
+        if (cacheManager != null) {
+            cache = cacheManager.createCache( "LuceneRecordStore-" + hashCode(), new MutableConfiguration()
+                    .setReadThrough( true )
+                    .setCacheLoaderFactory( () -> loader ) );
+        }
+
+        // init ExecutorService
+        executor = Optional.ofNullable( config.executor.get() ).orElse( defaultExecutor );
+        
         log.info( "Database: " + indexDir.getAbsolutePath()
                 + "\n    size: " + FileUtils.sizeOfDirectory( indexDir )
                 + "\n    using: " + directory.getClass().getSimpleName()
-                + "\n    files in directry: " + Arrays.asList( directory.listAll() ) );
+                + "\n    files in directry: " + Arrays.asList( directory.listAll() )
+                + "\n    cache: " + (cache != null ? cache.getClass().getSimpleName() : "none")
+                + "\n    executor: " + executor.getClass().getSimpleName() );
+    }
+
+
+    /**
+     * Creates a new store for the given filesystem directory. 
+     * 
+     * @param indexDir The directory to hold the store files.
+     * @param clean
+     * @throws IOException
+     */
+    public LuceneRecordStore( File indexDir, boolean clean ) throws IOException {
+        this( newConfiguration()
+                .indexDir.set( indexDir )
+                .clean.set( clean ) );        
     }
 
 
@@ -191,6 +269,7 @@ public final class LuceneRecordStore
      * @throws IOException
      */
     public LuceneRecordStore() throws IOException {
+        config = newConfiguration();
         directory = new RAMDirectory();
         log.info( "    RAMDirectory: " + Arrays.asList( directory.listAll() ) );
         open( true );
@@ -198,6 +277,7 @@ public final class LuceneRecordStore
 
     
     protected ReadWriteLock newLock() {
+        /*= new ReentrantReadWriteLock();*/
         return new IndexReaderReadWriteLock( reader );    
     }
     
@@ -205,9 +285,9 @@ public final class LuceneRecordStore
     protected void open( boolean clean ) throws IOException {
         // create or clear index
         if (directory.listAll().length == 0 || clean) {
-            IndexWriterConfig config = new IndexWriterConfig( VERSION, analyzer )
+            IndexWriterConfig writerConfig = new IndexWriterConfig( VERSION, analyzer )
                     .setOpenMode( OpenMode.CREATE );
-            IndexWriter iwriter = new IndexWriter( directory, config );
+            IndexWriter iwriter = new IndexWriter( directory, writerConfig );
             iwriter.close();
             log.info( "    Index created." );
         }
@@ -234,7 +314,7 @@ public final class LuceneRecordStore
             }
             
             if (cache != null) {
-                cache.dispose();
+                cache.close();
                 doc2id.clear();
             }
         }
@@ -288,11 +368,11 @@ public final class LuceneRecordStore
     }
 
 
-    public void setDocumentCache( Cache<Object,Document> cache ) {
-        this.cache = cache;
-        this.doc2id = CacheManager.instance().newCache( 
-                CacheConfig.DEFAULT.defaultElementSize( 128 ) );
-    }
+//    public void setDocumentCache( Cache<Object,Document> cache ) {
+//        this.cache = cache;
+//        this.doc2id = CacheManager. instance().newCache( 
+//                CacheConfig.DEFAULT.defaultElementSize( 128 ) );
+//    }
 
 
     @Override
@@ -318,9 +398,7 @@ public final class LuceneRecordStore
         assert !isClosed() : "Store is closed already.";
         assert id instanceof String : "Given record identifier is not a String: " + id;
         
-        Document doc = cache != null
-                ? cache.get( id, loader )
-                : loader.load( id );
+        Document doc = cache != null ? cache.get( id ) : loader.load( id );
                 
         return doc != null ? new LuceneRecordState( LuceneRecordStore.this, doc, cache != null ) : null;
     }
@@ -365,7 +443,7 @@ public final class LuceneRecordStore
         if (cache != null) {
             doc2id.putIfAbsent( docnum, result.id() );
             //System.out.println( "-" );
-            if (cache.putIfAbsent( result.id(), doc ) == null) {
+            if (cache.putIfAbsent( result.id(), doc )) {
                 result.setShared( true );
             }
         }
@@ -377,27 +455,32 @@ public final class LuceneRecordStore
      * Loads records triggered by the cache in {@link LuceneRecordStore#get(Object)}.
      */
     class DocumentLoader
-            implements CacheLoader<Object,Document,Exception> {
+            implements CacheLoader<Object,Document> {
         
-        public Document load( Object id ) throws Exception {
-            TermDocs termDocs = null;
-            try {
-                log.trace( "LUCENE: termDocs: " + LuceneRecordState.ID_FIELD + " = " + id.toString() );
-                lock.readLock().lock();
-                termDocs = reader.termDocs( new Term( LuceneRecordState.ID_FIELD, id.toString() ) );
+        @Override
+        public Document load( Object id ) throws CacheLoaderException {
+            log.trace( "LUCENE: termDocs: " + LuceneRecordState.ID_FIELD + " = " + id.toString() );
+
+            lock.readLock().lock();
+            Term term = new Term( LuceneRecordState.ID_FIELD, id.toString() );
+            
+            try (TermDocs termDocs = reader.termDocs( term )) {
                 if (termDocs.next()) {
                     return reader.document( termDocs.doc() );
                 }
                 return null;
             }
+            catch (IOException e) {
+                throw new CacheLoaderException( e );
+            }
             finally {
                 lock.readLock().unlock();
-                if (termDocs != null) { termDocs.close(); }
             }
         }
 
-        public int size() throws Exception {
-            return Cache.ELEMENT_SIZE_UNKNOW;
+        @Override
+        public Map<Object,Document> loadAll( Iterable<? extends Object> keys ) {
+            throw new RuntimeException( "not yet implemented" );
         }
     }
 
@@ -453,16 +536,16 @@ public final class LuceneRecordStore
                 //  - IndexWriterConfig#DEFAULT_RAM_BUFFER_SIZE_MB == 16MB
                 //  - autCommit == false
                 //  - 8 concurrent thread
-                IndexWriterConfig config = new IndexWriterConfig( VERSION, analyzer )
+                IndexWriterConfig writerConfig = new IndexWriterConfig( VERSION, analyzer )
                         .setOpenMode( OpenMode.APPEND )
-                        .setRAMBufferSizeMB( MAX_RAMBUFFER_SIZE );
+                        .setRAMBufferSizeMB( config.maxRamBufferSize.get() );
                 
                 // limit segment size for lower pauses on interactive indexing
                 LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-                mergePolicy.setMaxMergeMB( MAX_MERGE_SIZE );
-                config.setMergePolicy( mergePolicy );
-                config.setMaxBufferedDocs( IndexWriterConfig.DISABLE_AUTO_FLUSH );
-                writer = new IndexWriter( directory, config );
+                mergePolicy.setMaxMergeMB( config.maxMergeSize.get() );
+                writerConfig.setMergePolicy( mergePolicy );
+                writerConfig.setMaxBufferedDocs( IndexWriterConfig.DISABLE_AUTO_FLUSH );
+                writer = new IndexWriter( directory, writerConfig );
             }
             catch (Exception e) {
                 if (writer != null) {
@@ -532,7 +615,7 @@ public final class LuceneRecordStore
                 double deleted = reader.numDeletedDocs();
                 double total = reader.numDocs();
                 double percent = 100d / total * deleted; 
-                if (optimizeIndex || percent > MAX_DELETED_PERCENT) {
+                if (optimizeIndex || percent > config.maxDeletedPercent.get() ) {
                     Timer t = new Timer();
                     writer.forceMergeDeletes( true );
                     writer.forceMerge( 1, true );

@@ -14,10 +14,18 @@
  */
 package org.polymap.model2.runtime;
 
+import javax.cache.CacheManager;
+
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
+import org.polymap.model2.engine.EntityRepositoryImpl;
+import org.polymap.model2.engine.SimpleCache;
+import org.polymap.model2.engine.SimpleCacheManager;
+import org.polymap.model2.runtime.config.ConfigurationFactory;
+import org.polymap.model2.runtime.config.Mandatory;
+import org.polymap.model2.runtime.config.Property;
 import org.polymap.model2.store.StoreSPI;
 
 /**
@@ -35,15 +43,43 @@ public abstract class EntityRepository {
 
     // config factory *************************************
     
-    public static EntityRepositoryConfiguration newConfiguration() {
-        return new EntityRepositoryConfiguration();
+    /**
+     * Returns a new Configuration to {@link Configuration#create()} a new
+     * {@link EntityRepository} from.
+     */
+    public static Configuration newConfiguration() {
+        return ConfigurationFactory.create( Configuration.class );
     }
     
+    public static class Configuration {
+
+        @Mandatory
+        public Property<Configuration,StoreSPI>     store;
+        
+        @Mandatory
+        public Property<Configuration,Class<Entity>[]> entities;
+        
+        /**
+         * The CacheManager to create internal caches from. Mainly this is used to
+         * create the cache for {@link Entity} instances.If not specified then a
+         * default Cache ({@link SimpleCache}) implementation is used.
+         */
+        public Property<Configuration,CacheManager> cacheManager;
+        
+        public EntityRepository create() {
+            if (cacheManager.get() == null) {
+                cacheManager.set( new SimpleCacheManager() );
+            }
+            return new EntityRepositoryImpl( this );
+        }
+    }
+        
+
     // instance *******************************************
     
     public abstract StoreSPI getStore();
     
-    public abstract EntityRepositoryConfiguration getConfig();
+    public abstract Configuration getConfig();
     
     public abstract void close();
 

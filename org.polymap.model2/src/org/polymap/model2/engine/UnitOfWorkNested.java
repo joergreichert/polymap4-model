@@ -24,18 +24,22 @@ import java.util.Iterator;
 
 import java.io.IOException;
 
+import javax.cache.Cache.Entry;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Entity;
+import org.polymap.model2.engine.LoadingCache.Loader;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
+import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
-import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
 
@@ -68,7 +72,7 @@ public class UnitOfWorkNested
         assert entityClass != null;
         assert id != null;
         checkOpen();
-        T result = (T)loaded.get( id, new EntityCacheLoader() {
+        T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
                 // just clone the entire Entity and its state; copy-on-write would probably
                 // be faster and less memory consuming but also would introduce a lot more complexity;
@@ -171,6 +175,9 @@ public class UnitOfWorkNested
                         }
                         return size;
                     }
+                    @Override
+                    public void close() {
+                    }
                 };
             }
         };
@@ -226,7 +233,7 @@ public class UnitOfWorkNested
                 prepare();
             }
             catch (Exception e) {
-                propagateIfPossible( e, ModelRuntimeException.class );
+                Throwables.propagateIfPossible( e, ModelRuntimeException.class );
             }
         }
         if (prepareResult != PREPARED) {
@@ -235,8 +242,8 @@ public class UnitOfWorkNested
         prepareResult = null;
         
         // reset Entity status
-        for (Entity entity : loaded.values()) {
-            repo.contextOfEntity( entity ).resetStatus( EntityStatus.LOADED );
+        for (Entry<Object,Entity> entry : loaded) {
+            repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
         modified.clear();
     }

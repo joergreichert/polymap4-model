@@ -18,11 +18,11 @@ import static org.apache.commons.lang3.StringUtils.abbreviate;
 
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Timer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import java.io.IOException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.FieldSelector;
@@ -33,6 +33,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 
+import org.polymap.model2.test.Timer;
 import org.polymap.recordstore.IRecordFieldSelector;
 import org.polymap.recordstore.IRecordState;
 import org.polymap.recordstore.RecordQuery;
@@ -155,8 +156,7 @@ public class LuceneRecordQuery
             return scoreDocs.length;
         }
 
-        public LuceneRecordState get( int index )
-        throws Exception {
+        public LuceneRecordState get( int index ) throws Exception {
             assert index < scoreDocs.length;
             int doc = scoreDocs[index].doc;
             return store.get( doc, fieldSelector );
@@ -166,11 +166,12 @@ public class LuceneRecordQuery
             return new Iterator<IRecordState>() {
 
                 private int         index;
-
+                
+                @Override
                 public boolean hasNext() {
                     return index < scoreDocs.length;
                 }
-
+                @Override
                 public LuceneRecordState next() {
                     try {
                         return get( index++ );
@@ -179,12 +180,18 @@ public class LuceneRecordQuery
                         throw new RuntimeException( e );
                     }
                 }
-
+                @Override
                 public void remove() {
                     throw new UnsupportedOperationException( "Not supported." );
                 }
             };
         }
+
+        @Override
+        public Stream<IRecordState> stream() {
+            return StreamSupport.stream( spliterator(), false );
+        }
+        
     }
 
     

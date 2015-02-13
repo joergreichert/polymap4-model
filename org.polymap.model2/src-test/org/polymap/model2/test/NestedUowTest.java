@@ -163,18 +163,14 @@ public abstract class NestedUowTest
      * 
      */
     public void testQuery() throws Exception {
-        Employee parentEmployee = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
-            public Employee initialize( Employee prototype ) throws Exception {
+        Employee parentEmployee = uow.createEntity( Employee.class, null, (Employee prototype) -> {
                 prototype.name.set( "name" ); return prototype;
-            }
         });
         
         UnitOfWork nested = uow.newUnitOfWork();
         
-        nested.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
-            public Employee initialize( Employee prototype ) throws Exception {
+        nested.createEntity( Employee.class, null, (Employee prototype) -> {
                 prototype.name.set( "name2" ); return prototype;
-            }
         });
 
         // check nested

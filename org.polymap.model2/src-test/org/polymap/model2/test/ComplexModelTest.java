@@ -19,7 +19,6 @@ import java.util.Collection;
 
 import junit.framework.TestCase;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -120,7 +119,7 @@ public abstract class ComplexModelTest
         assertTrue( company.docs.equals( company.docs ) );
         ArrayList<String> copy = Lists.newArrayList( company.docs );
         assertTrue( company.docs.equals( copy ) );
-        assertTrue( CollectionUtils.isEqualCollection( company.docs, copy ) );
+        //assertTrue( CollectionUtils.isEqualCollection( company.docs, copy ) );
 
         uow.commit();
 
