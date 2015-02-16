@@ -37,7 +37,8 @@ import org.polymap.model2.store.StoreSPI;
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public abstract class EntityRepository {
+public abstract class EntityRepository
+        implements AutoCloseable {
 
     private static Log log = LogFactory.getLog( EntityRepository.class );
 

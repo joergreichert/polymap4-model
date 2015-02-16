@@ -100,16 +100,35 @@ public class EntityRepositoryImpl
 
     
     public StoreSPI getStore() {
+        checkOpen();
         return config.store.get();
     }
 
     
     public Configuration getConfig() {
+        checkOpen();
         return config;
     }
 
+    public boolean isOpen() {
+        return config != null;
+    }
     
+    protected void checkOpen() {
+        if (!isOpen()) {
+            throw new RuntimeException( "EntityRepository is closed." );
+        }
+    }
+
     public void close() {
+        if (isOpen()) {
+            try {
+                getStore().close();
+            }
+            finally {
+                config = null;
+            }
+        }
     }
 
     @Override

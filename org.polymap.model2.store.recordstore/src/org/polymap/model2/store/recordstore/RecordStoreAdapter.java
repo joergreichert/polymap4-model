@@ -53,6 +53,8 @@ public class RecordStoreAdapter
 
 
     public void close() {
+        store.close();
+        store = null;
     }
 
 

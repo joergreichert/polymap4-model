@@ -42,7 +42,7 @@ public class LuceneSimpleModelTest
         super( name );
     }
 
-
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
         store = new LuceneRecordStore();
@@ -54,9 +54,14 @@ public class LuceneSimpleModelTest
     }
 
     
+    @Override
+    protected void tearDown() throws Exception {
+        store.close();
+    }
+
+
     protected Object stateId( Object state ) {
         return ((IRecordState)state).id();    
     }
-
 
 }

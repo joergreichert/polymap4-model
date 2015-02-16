@@ -14,8 +14,10 @@
  */
 package org.polymap.recordstore.lucene;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -300,26 +302,40 @@ public final class LuceneRecordStore
     
     @Override
     public void close() {
-        try {
-            if (searcher != null) {
-                searcher.close();
-                searcher = null;
+        Closer closer = new Closer();
+        searcher = closer.close( searcher );
+        reader = closer.close( reader );
+        directory = closer.close( directory );
+        cache = closer.close( cache );
+        doc2id = closer.close( doc2id );
+        lock = null;
+        closer.throwAnyException();
+    }
+
+    
+    /**
+     * Collect Exceptions during close() 
+     */
+    static class Closer {
+        
+        private List<Throwable>     throwables = new ArrayList();
+        
+        public <T extends AutoCloseable> T close( T closeable ) {
+            try {
+                if (closeable != null) {
+                    closeable.close();
+                }
             }
-            if (reader != null) {
-                reader.close();
-                reader = null;
-                lock = null;
-                directory.close();
-                directory = null;
+            catch (Throwable e) {
+                throwables.add( e );
             }
-            
-            if (cache != null) {
-                cache.close();
-                doc2id.clear();
-            }
+            return null;
         }
-        catch (IOException e) {
-            throw new RuntimeException( e );
+
+        public void throwAnyException() {
+            if (!throwables.isEmpty()) {
+                throw new RuntimeException( "Exceptions during close(): " + throwables, throwables.get( 0 ) );
+            }
         }
     }
     

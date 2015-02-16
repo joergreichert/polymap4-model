@@ -38,7 +38,8 @@ import org.polymap.model2.store.StoreSPI;
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public interface UnitOfWork {
+public interface UnitOfWork
+        extends AutoCloseable {
 
     /**
      * Builds an {@link Entity} instance for the given state and assigns it
@@ -144,7 +145,7 @@ public interface UnitOfWork {
 
     /**
      * Closes this UnitOfWork by releasing all resources associated with this
-     * UnitOfWork. All uncommitted modifications are discarded.
+     * instance. All uncommitted modifications are discarded.
      * <p/>
      * No method should be called after closing the UnitOfWork except for
      * {@link #isOpen()}.
