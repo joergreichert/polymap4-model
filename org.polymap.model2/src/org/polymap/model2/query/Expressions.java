@@ -75,8 +75,8 @@ public class Expressions {
     }
     
     /**
-     * True if there is at least one element in the collection that fullfils the
-     * given sub expression.
+     * True if there is at least one element in the collection that matches the
+     * given sub comparison predicate.
      */
     public static <T> void any( CollectionProperty<T> prop, ComparisonPredicate<T> sub ) {
         throw new RuntimeException( "not yet implemented" );

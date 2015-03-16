@@ -14,8 +14,6 @@
  */
 package org.polymap.model2.engine;
 
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.CREATED;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIFIED;
 
@@ -25,6 +23,8 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import java.io.IOException;
 
@@ -32,9 +32,7 @@ import javax.cache.Cache.Entry;
 import javax.cache.CacheManager;
 import javax.cache.configuration.MutableConfiguration;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Composite;
@@ -50,6 +48,7 @@ import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
+import org.polymap.model2.store.CompositeStateReference;
 import org.polymap.model2.store.StoreUnitOfWork;
 
 /**
@@ -155,12 +154,21 @@ public class UnitOfWorkImpl
 
     @Override
     public <T extends Entity> T entity( final Class<T> entityClass, final Object id ) {
+        return entity( entityClass, id, null );
+    }
+
+
+    protected <T extends Entity> T entity( final Class<T> entityClass, final Object id, 
+            final Supplier<CompositeState> preloaded ) {
         assert entityClass != null;
         assert id != null;
         checkOpen();
         T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
-                CompositeState state = storeUow.loadEntityState( id, entityClass );
+                CompositeState supplied = preloaded != null ? preloaded.get() : null;
+                CompositeState state = supplied != null
+                        ? supplied
+                        : storeUow.loadEntityState( id, entityClass );
                 return state != null ? repo.buildEntity( state, entityClass, UnitOfWorkImpl.this ) : null;
             }
         });
@@ -214,71 +222,17 @@ public class UnitOfWorkImpl
         checkOpen();
         return new Query( entityClass ) {
             public ResultSet<T> execute() {
-                // we actual execute the query just once against the backend store, result ids
-                // are store for subsequent calls to iterator(); however, creating and filtering
-                // Entities is done on-the-fly to avoid loading all Entities in memory at same time
+                // actual execute the query just once against the backend store, result ids
+                // are cached for subsequent calls to iterator(); however, creating and filtering
+                // entities is done on-the-fly to avoid loading all Entities in memory at same time
 
                 // XXX without this copy the collection is empty on second access;
                 // iterate instead of addAll() to avoid call of size()
-                final Collection ids = new ArrayList( 1024 );
-                for (Object id : storeUow.executeQuery( this ) ) {
-                    ids.add( id );
+                final Collection<CompositeStateReference> refs = new ArrayList( 1024 );
+                for (CompositeStateReference ref : storeUow.executeQuery( this ) ) {
+                    refs.add( ref );
                 }
-                Iterable<T> found = transform( ids, new Function<Object,T>() {
-                    public T apply( Object id ) {
-                        return entity( entityClass, id ); 
-                    }
-                });
-                // filter out modified/removed (avoid loading everything in memory)
-                final Iterable<T> notModified = filter( found, new Predicate<T>() {
-                    public boolean apply( T input ) {
-                        EntityStatus status = input.status();
-                        assert status != EntityStatus.CREATED; 
-                        return status == EntityStatus.LOADED;
-                    }
-                });
                 
-                // new/updated states -> pre-process
-                final Iterable<Entity> updated = filter( modified.values(), new Predicate<Entity>() {
-                    public boolean apply( Entity entity ) {
-                        if (entity.getClass().equals( entityClass ) && (entity.status() == CREATED || entity.status() == MODIFIED )) {
-                            if (expression == null) {
-                                return true;
-                            }
-                            else if (expression instanceof BooleanExpression) {
-                                return ((BooleanExpression)expression).evaluate( entity );
-                            }
-                            else {
-                                return storeUow.evaluate( entity.state(), expression );
-                            }
-                        }
-                        return false;
-                    }                    
-                });
-//                final Iterable<T> updated2 = transform( updated, new Function<Entity,T>() {
-//                    public T apply( Entity entity ) {
-//                        return (T)entity;
-//                    }
-//                });
-                
-//                List<T> updated = new ArrayList();
-//                for (Entity entity : modified.values()) {
-//                    if (entity.getClass().equals( entityClass ) &&
-//                            (entity.status() == EntityStatus.CREATED || entity.status() == EntityStatus.MODIFIED )) {
-//                        if (expression == null) {
-//                            updated.add( (T)entity );
-//                        }
-//                        else if (expression instanceof BooleanExpression) {
-//                            if (((BooleanExpression)expression).evaluate( entity )) {
-//                                updated.add( (T)entity );
-//                            }
-//                        }
-//                        else if (storeUow.evaluate( entity.state(), expression )) {
-//                            updated.add( (T)entity );
-//                        }
-//                    }
-//                }
-
                 return new ResultSet<T>() {
                     
                     /** The cached size; not synchronized */
@@ -286,13 +240,39 @@ public class UnitOfWorkImpl
 
                     @Override
                     public Iterator<T> iterator() {
-                        return (Iterator<T>)Iterators.concat( notModified.iterator(), updated.iterator() );
+                        // unmodified
+                        Stream<T> foundUnmodified = refs.stream()
+                                .map( ref -> entity( entityClass, ref.id(), ref ) )
+                                .filter( entity -> {
+                                    EntityStatus status = entity.status();
+                                    assert status != EntityStatus.CREATED; 
+                                    return status == EntityStatus.LOADED;                            
+                                });
+                        // modified
+                        // XXX not cached, done for every call to iterator()
+                        Stream<T> foundModified = (Stream<T>)modified.values().stream()
+                                .filter( entity -> {
+                                    if (entity.getClass().equals( entityClass ) 
+                                            && (entity.status() == CREATED || entity.status() == MODIFIED )) {
+                                        if (expression == null) {
+                                            return true;
+                                        }
+                                        else if (expression instanceof BooleanExpression) {
+                                            return ((BooleanExpression)expression).evaluate( entity );
+                                        }
+                                        else {
+                                            return storeUow.evaluate( entity.state(), expression );
+                                        }
+                                    }
+                                    return false;
+                                });
+                        return Stream.concat( foundUnmodified, foundModified ).iterator();
                     }
                     @Override
                     public int size() {
                         if (size == -1) {
                             // avoid iterating if no modifications
-                            size = modified.isEmpty() ? ids.size() : Iterators.size( iterator() );
+                            size = modified.isEmpty() ? refs.size() : Iterators.size( iterator() );
                         }
                         return size;
                     }

@@ -2,10 +2,40 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Recordstore/Lucene Store Backend
 Bundle-SymbolicName: org.polymap.model2.store.recordstore
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 3.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: lib/lucene-core-3.6.2.jar,
  lib/lucene-queryparser-3.6.2.jar,
  .
-Require-Bundle: org.polymap.model2;bundle-version="1.0.0"
+Require-Bundle: org.polymap.model2;bundle-version="3.0.0",
+ org.polymap.core.data;bundle-version="4.0.0";resolution:=optional
 Import-Package: org.apache.commons.logging
+Export-Package: org.apache.lucene,
+ org.apache.lucene.analysis,
+ org.apache.lucene.collation,
+ org.apache.lucene.document,
+ org.apache.lucene.index,
+ org.apache.lucene.messages,
+ org.apache.lucene.queryParser,
+ org.apache.lucene.queryParser.analyzing,
+ org.apache.lucene.queryParser.complexPhrase,
+ org.apache.lucene.queryParser.ext,
+ org.apache.lucene.queryParser.precedence,
+ org.apache.lucene.queryParser.precedence.processors,
+ org.apache.lucene.queryParser.standard,
+ org.apache.lucene.queryParser.standard.builders,
+ org.apache.lucene.queryParser.standard.config,
+ org.apache.lucene.queryParser.standard.nodes,
+ org.apache.lucene.queryParser.standard.parser,
+ org.apache.lucene.queryParser.standard.processors,
+ org.apache.lucene.queryParser.surround.parser,
+ org.apache.lucene.queryParser.surround.query,
+ org.apache.lucene.search,
+ org.apache.lucene.search.function,
+ org.apache.lucene.search.payloads,
+ org.apache.lucene.search.spans,
+ org.apache.lucene.store,
+ org.apache.lucene.util,
+ org.polymap.model2.store.recordstore,
+ org.polymap.recordstore,
+ org.polymap.recordstore.lucene

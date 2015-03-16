@@ -34,6 +34,7 @@ import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
+import org.polymap.model2.store.CompositeStateReference;
 import org.polymap.model2.store.StoreRuntimeContext;
 import org.polymap.model2.store.StoreUnitOfWork;
 import org.polymap.recordstore.IRecordState;
@@ -126,7 +127,7 @@ public class RecordStoreUnitOfWork
 
 
     @Override
-    public Collection executeQuery( Query query ) {
+    public Collection<CompositeStateReference> executeQuery( Query query ) {
         try {
             RecordQuery recordQuery = null;
             if (query.expression == null) {
@@ -146,16 +147,19 @@ public class RecordStoreUnitOfWork
             recordQuery.setMaxResults( query.maxResults );
             final ResultSet results = store.find( recordQuery );
             
-            return new AbstractCollection() {
+            return new AbstractCollection<CompositeStateReference>() {
                 @Override
                 public Iterator iterator() {
-                    return results.stream().map( (IRecordState state) -> state.id() ).iterator();
-                    
-//                    return Iterators.transform( results.iterator(), new Function<IRecordState,Object>() {
-//                        public Object apply( IRecordState input ) {
-//                            return input.id();
-//                        }
-//                    });
+                    return results.stream().map( state -> new CompositeStateReference() {
+                        @Override
+                        public Object id() {
+                            return state.id();
+                        }
+                        @Override
+                        public CompositeState get() {
+                            return new RecordCompositeState( state );
+                        }
+                    }).iterator();
                 }
                 @Override
                 public int size() {

@@ -55,7 +55,7 @@ public interface StoreUnitOfWork {
      * @param entityClass
      * @return Collection of ids of the found entities.
      */
-    public Collection<Object> executeQuery( Query query );
+    public Collection<CompositeStateReference> executeQuery( Query query );
     
     /**
      * Evaluate the given store specific expression against the given Composite

@@ -123,7 +123,8 @@ public final class LuceneRecordStore
         public Property<Configuration,Boolean>          clean;
         
         /**
-         * The ExecutorService to be used for Lucene queries.
+         * The ExecutorService to be used for Lucene queries. If not set then a
+         * default executor configuration is used.
          */
         public Property<Configuration,ExecutorService>  executor;
         

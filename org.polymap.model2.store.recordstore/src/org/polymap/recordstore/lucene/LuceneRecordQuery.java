@@ -80,37 +80,43 @@ public class LuceneRecordQuery
     public ResultSet execute() throws IOException {
         Timer timer = new Timer();
         
-        String sortKey = getSortKey();
-        if (sortKey != null) {
-            int sortType = SortField.STRING;
-            if (getSortType() == String.class) {
-                sortType = SortField.STRING;
+        try {
+            store.lock.readLock().lock();
+            String sortKey = getSortKey();
+            if (sortKey != null) {
+                int sortType = SortField.STRING;
+                if (getSortType() == String.class) {
+                    sortType = SortField.STRING;
+                }
+                else if (getSortType() == Integer.class) {
+                    sortType = SortField.INT;
+                }
+                else if (getSortType() == Long.class) {
+                    sortType = SortField.LONG;
+                }
+                else if (getSortType() == Float.class) {
+                    sortType = SortField.FLOAT;
+                }
+                else if (getSortType() == Double.class) {
+                    sortType = SortField.DOUBLE;
+                }
+                else if (getSortType() == Date.class) {
+                    sortType = SortField.LONG;
+                    sortKey = sortKey + DateValueCoder.SUFFIX;
+                }
+                Sort sort = new Sort( new SortField( sortKey, sortType, getSortOrder() == DESC ) );
+                TopDocs topDocs = store.searcher.search( luceneQuery, getMaxResults(), sort );
+                log.debug( "LUCENE: " + abbreviate( luceneQuery.toString(), 256 ) + "  --  result: " + topDocs.scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
+                return new LuceneResultSet( topDocs.scoreDocs );
             }
-            else if (getSortType() == Integer.class) {
-                sortType = SortField.INT;
+            else {
+                TopDocs topDocs = store.searcher.search( luceneQuery, getMaxResults() );
+                log.info( "LUCENE: " + abbreviate( luceneQuery.toString(), 256 ) + "  --  result: " + topDocs.scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
+                return new LuceneResultSet( topDocs.scoreDocs );
             }
-            else if (getSortType() == Long.class) {
-                sortType = SortField.LONG;
-            }
-            else if (getSortType() == Float.class) {
-                sortType = SortField.FLOAT;
-            }
-            else if (getSortType() == Double.class) {
-                sortType = SortField.DOUBLE;
-            }
-            else if (getSortType() == Date.class) {
-                sortType = SortField.LONG;
-                sortKey = sortKey + DateValueCoder.SUFFIX;
-            }
-            Sort sort = new Sort( new SortField( sortKey, sortType, getSortOrder() == DESC ) );
-            TopDocs topDocs = store.searcher.search( luceneQuery, getMaxResults(), sort );
-            log.debug( "LUCENE: " + abbreviate( luceneQuery.toString(), 256 ) + "  --  result: " + topDocs.scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
-            return new LuceneResultSet( topDocs.scoreDocs );
         }
-        else {
-            TopDocs topDocs = store.searcher.search( luceneQuery, getMaxResults() );
-            log.debug( "LUCENE: " + abbreviate( luceneQuery.toString(), 256 ) + "  --  result: " + topDocs.scoreDocs.length + " (" + timer.elapsedTime() + "ms)" );
-            return new LuceneResultSet( topDocs.scoreDocs );
+        finally {
+            store.lock.readLock().unlock();
         }
     }
 
@@ -129,6 +135,7 @@ public class LuceneRecordQuery
 
 
         protected LuceneResultSet( ScoreDoc[] scoreDocs ) {
+            assert scoreDocs != null;
             this.scoreDocs = scoreDocs;
             
             // build fieldSelector
@@ -148,15 +155,22 @@ public class LuceneRecordQuery
             }
         }
 
+        protected void checkOpen() {
+            if (scoreDocs == null) {
+                throw new IllegalStateException( "LucenResultSet is closed." );
+            }
+        }
         public void close() {
             scoreDocs = null;
         }
 
         public int count() {
+            checkOpen();
             return scoreDocs.length;
         }
 
         public LuceneRecordState get( int index ) throws Exception {
+            checkOpen();
             assert index < scoreDocs.length;
             int doc = scoreDocs[index].doc;
             return store.get( doc, fieldSelector );
@@ -169,10 +183,12 @@ public class LuceneRecordQuery
                 
                 @Override
                 public boolean hasNext() {
+                    checkOpen();
                     return index < scoreDocs.length;
                 }
                 @Override
                 public LuceneRecordState next() {
+                    checkOpen();
                     try {
                         return get( index++ );
                     }
@@ -189,6 +205,7 @@ public class LuceneRecordQuery
 
         @Override
         public Stream<IRecordState> stream() {
+            checkOpen();
             return StreamSupport.stream( spliterator(), false );
         }
         

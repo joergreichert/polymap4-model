@@ -90,7 +90,7 @@ public abstract class StoreDecorator
             return suow.newEntityState( id, entityClass );
         }
 
-        public Collection<Object> executeQuery( Query query ) {
+        public Collection<CompositeStateReference> executeQuery( Query query ) {
             return suow.executeQuery( query );
         }
 
