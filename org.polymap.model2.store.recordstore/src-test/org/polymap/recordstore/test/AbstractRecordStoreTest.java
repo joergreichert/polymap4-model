@@ -134,7 +134,6 @@ public abstract class AbstractRecordStoreTest
     protected void queryRecords( int loops ) throws Exception {
         final Timer timer = new Timer();
         int found = 0;
-        String dummy = null;
         for (int i=0; i<loops; i++) {
 //            RecordQuery query = new SimpleQuery()
 //                    .eq( TestRecord.TYPE.count.name(), String.valueOf( i ) )
