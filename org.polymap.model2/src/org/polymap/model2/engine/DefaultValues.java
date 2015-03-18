@@ -36,6 +36,7 @@ public class DefaultValues {
     public static final String      DEFAULT_STRING = "";
     public static final Integer     DEFAULT_INTEGER = new Integer( 0 );
     public static final Date        DEFAULT_DATE = new Date( 0 );
+    public static final Boolean     DEFAULT_BOOLEAN = Boolean.FALSE;
 
     /**
      * Creates a default value for the given field. The default value can be defined
@@ -75,6 +76,9 @@ public class DefaultValues {
             }
             else if (type.equals( Date.class )) {
                 return DEFAULT_DATE;
+            }
+            else if (type.equals( Boolean.class )) {
+                return DEFAULT_BOOLEAN;
             }
             // XXX
             else {

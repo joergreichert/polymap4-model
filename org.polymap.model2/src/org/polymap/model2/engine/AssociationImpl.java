@@ -34,9 +34,15 @@ class AssociationImpl<T extends Entity>
     
     private EntityRuntimeContext        context;
     
+    /** Holding the id of the associated Entity. */
     private StoreProperty<Object>       storeProp;
     
     
+    /**
+     * 
+     * @param context
+     * @param storeProp Holding the id of the associated Entity.
+     */
     public AssociationImpl( EntityRuntimeContext context, StoreProperty storeProp ) {
         this.context = context;
         this.storeProp = storeProp;

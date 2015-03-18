@@ -39,11 +39,8 @@ public class AssociationEquals<T extends Entity>
 
     @Override
     public boolean evaluate( Composite target ) {
-        if (assoc.getTraversed() != null) {
-            throw new UnsupportedOperationException( "Composite properties is not yet supported." );
-        }
-        String propName = assoc.getInfo().getName();
-        Entity entity = ((Association)target.info().getProperty( propName ).get( target )).get();
+        Association<T> targetProp = targetProp( target, assoc );
+        Entity entity = targetProp.get();
         return entity != null && children[0].evaluate( entity );
     }
     

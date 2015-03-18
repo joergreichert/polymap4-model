@@ -32,12 +32,8 @@ public class PropertyEquals<T>
 
     @Override
     public boolean evaluate( Composite target ) {
-        if (prop.getTraversed() != null) {
-            throw new UnsupportedOperationException( "Composite properties is not yet supported." );
-        }
-        String propName = prop.getInfo().getName();
-        Object propValue = ((Property)target.info().getProperty( propName ).get( target )).get();
-        return value.equals( propValue );
+        Property<T> targetProp = targetProp( target, prop );
+        return value.equals( targetProp.get() );
     }
     
 }

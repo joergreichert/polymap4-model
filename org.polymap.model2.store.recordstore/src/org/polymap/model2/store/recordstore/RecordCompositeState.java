@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2012-2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -36,47 +36,48 @@ import org.polymap.recordstore.IRecordState;
 class RecordCompositeState
         implements CompositeState {
     
-    public static final String      KEY_DELIMITER = "/";
+//    public static final String      KEY_DELIMITER = "/";
 
     public static final String      TYPE_KEY = "_type_";
     
-    public static String buildKey( String... parts ) {
-        // Joiner.on( KEY_DELIMITER ).skipNulls().join( baseKey, info.getNameInStore() );
-        StringBuilder result = new StringBuilder( 256 );
-        for (String part : parts) {
-            if (part != null && part.length() > 0) {
-                if (result.length() > 0) {
-                    result.append( KEY_DELIMITER );
-                }
-                result.append( part );
-            }
-        }
-        return result.toString();
-    }
+//    public static String buildKey( String... parts ) {
+//        // Joiner.on( KEY_DELIMITER ).skipNulls().join( baseKey, info.getNameInStore() );
+//        StringBuilder result = new StringBuilder( 256 );
+//        for (String part : parts) {
+//            if (part != null && part.length() > 0) {
+//                if (result.length() > 0) {
+//                    result.append( KEY_DELIMITER );
+//                }
+//                result.append( part );
+//            }
+//        }
+//        return result.toString();
+//    }
     
     // instance *******************************************
     
     protected IRecordState          state;
     
-    protected String                baseKey;
+    protected FieldnameBuilder      basename;
 
     
-    protected RecordCompositeState( IRecordState state ) {
+    public RecordCompositeState( IRecordState state ) {
         assert state != null;
         this.state = state;
+        this.basename = FieldnameBuilder.EMPTY;
     }
 
-    protected RecordCompositeState( IRecordState state, String baseKey ) {
+    private RecordCompositeState( IRecordState state, FieldnameBuilder basename ) {
         assert state != null;
-        assert baseKey != null;
+        assert basename != null;
         this.state = state;
-        this.baseKey = baseKey;
+        this.basename = basename;
     }
 
     @Override
     public Object id() {
         // a non-Entity Composite property does not have an id 
-        if (baseKey != null) {
+        if (basename != FieldnameBuilder.EMPTY) {
             throw new IllegalStateException( "Composite property does not have an id." );            
         } 
         else {
@@ -87,23 +88,29 @@ class RecordCompositeState
     @Override
     public Object getUnderlying() {
         // a non-Entity Composite property does not have an underlying representation 
-        assert baseKey == null;
+        assert basename == FieldnameBuilder.EMPTY;
         return state;
     }
 
     @Override
     public StoreProperty loadProperty( PropertyInfo info ) {
+        // association
         if (info.isAssociation()) {
-            return new PropertyImpl( info );
+            return info.getMaxOccurs() > 1 
+                    ? new CollectionPropertyImpl( info, basename )
+                    : new PropertyImpl( info, basename );
         }
-        else if (info.getMaxOccurs() > 1) {
-            return new CollectionPropertyImpl( info ); 
-        }
+        // composite
         else if (Composite.class.isAssignableFrom( info.getType() )) {
-            return new CompositePropertyImpl( info );
+            return info.getMaxOccurs() > 1 
+                    ? new CompositeCollectionPropertyImpl( info, basename )
+                    : new CompositePropertyImpl( info, basename );
         }
+        // primitive
         else {
-            return new PropertyImpl( info );
+            return info.getMaxOccurs() > 1 
+                    ? new CollectionPropertyImpl( info, basename )
+                    : new PropertyImpl( info, basename );
         }
     }
 
@@ -114,18 +121,18 @@ class RecordCompositeState
     protected class PropertyImpl
             implements StoreProperty {
         
-        private PropertyInfo            info;
+        protected PropertyInfo          info;
         
-        protected PropertyImpl( PropertyInfo info ) {
+        protected FieldnameBuilder      fieldname;
+        
+        
+        protected PropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
             this.info = info;
+            this.fieldname = parentname.composite( info.getNameInStore() );
         }
 
-        protected String key() {
-            return buildKey( baseKey, info.getNameInStore() );
-        }
-        
         public Object get() {
-            Object value = state.get( key() );
+            Object value = state.get( fieldname.get() );
             if (value != null && info.getType().isEnum()) {
                 value = Enum.valueOf( info.getType(), (String)value );
             }
@@ -134,13 +141,13 @@ class RecordCompositeState
 
         public void set( Object value ) {
             if (value == null) {
-                state.remove( key() );
+                state.remove( fieldname.get() );
             }
             else if (value instanceof Enum) {
-                state.put( key(), ((Enum)value).toString() );
+                state.put( fieldname.get(), ((Enum)value).toString() );
             }
             else {
-                state.put( key(), value );
+                state.put( fieldname.get(), value );
             }
         }
 
@@ -161,20 +168,20 @@ class RecordCompositeState
     protected class CompositePropertyImpl
             extends PropertyImpl {
 
-        protected CompositePropertyImpl( PropertyInfo info ) {
-            super( info );
+        protected CompositePropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
+            super( info, parentname );
         }
         
         @Override
         public CompositeState get() {
-            Object id = state.get( buildKey( key(), "_id_" ) );
-            return id != null ? new RecordCompositeState( state, key() ) : null;
+            Object id = state.get( fieldname.composite( "_id_" ).get() );
+            return id != null ? new RecordCompositeState( state, fieldname ) : null;
         }
         
         @Override
         public CompositeState createValue() {
-            state.put( buildKey( key(), "_id_" ), "created" );
-            return new RecordCompositeState( state, key() );
+            state.put( fieldname.composite( "_id_" ).get(), "created" );
+            return new RecordCompositeState( state, fieldname );
         }
 
         @Override
@@ -192,32 +199,26 @@ class RecordCompositeState
             extends PropertyImpl
             implements StoreCollectionProperty {
 
-        protected CollectionPropertyImpl( PropertyInfo info ) {
-            super( info );
-        }
-
-        protected String buildCollKey( int index ) {
-            return new StringBuilder( 256 ).append( key() ).append( '[' ).append( index ).append( ']' ).toString();
+        protected CollectionPropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
+            super( info, parentname );
         }
 
         @Override
         public Object createValue() {
-            RecordCompositeState result = new RecordCompositeState( state, buildCollKey( size() ) );
-            state.put( buildKey( key(), "__size__" ), size() + 1 );
-            return result;
+            throw new RuntimeException( "createValue() is not allowed for primitive value properties." );
         }
 
         @Override
         public int size() {
-            Integer result = state.get( buildKey( key(), "__size__" ) );
+            Integer result = state.get( fieldname.arraySize().get() );
             return result != null ? result : 0;
         }
 
         @Override
         public Iterator iterator() {
             return new Iterator() {
-                private int size = size();
-                private int index = 0;
+                int size = size();
+                int index = 0;
 
                 @Override
                 public boolean hasNext() {
@@ -226,12 +227,7 @@ class RecordCompositeState
 
                 @Override
                 public Object next() {
-                    if (Composite.class.isAssignableFrom( getInfo().getType() )) {
-                        return new RecordCompositeState( state, buildCollKey( index++ ) );
-                    }
-                    else {
-                        return state.get( buildCollKey( index++ ) );
-                    }
+                    return state.get( fieldname.arrayElement( index++ ).get() );
                 }
 
                 @Override
@@ -244,8 +240,8 @@ class RecordCompositeState
         public void remove( int index ) {
             // shift down all fields above index
             for (int i=index; i<size()-1; i++) {
-                String targetPrefix = buildCollKey( i );
-                String srcPrefix = buildCollKey( i+1 );
+                String targetPrefix = fieldname.arrayElement( i ).get();
+                String srcPrefix = fieldname.arrayElement( i+1 ).get();
 
                 Iterator<Entry<String,Object>> it = state.iterator();
                 Map<String,Object> newEntries = new HashMap();
@@ -265,7 +261,7 @@ class RecordCompositeState
                 }
             }
             // delete last element's/Composite's fields
-            String lastPrefix = buildCollKey( size()-1 );
+            String lastPrefix = fieldname.arrayElement( size()-1 ).get();
             Iterator<Entry<String,Object>> it = state.iterator();
             while (it.hasNext()) {
                 Entry<String,Object> entry = it.next();
@@ -274,16 +270,60 @@ class RecordCompositeState
                 }
             }
             // adjust size field
-            state.put( buildKey( key(), "__size__" ), size() - 1 );            
+            state.put( fieldname.arraySize().get(), size() - 1 );            
         }
         
         @Override
         public boolean add( Object o ) {
-            state.put( buildCollKey( size() ), o );
-            state.put( buildKey( key(), "__size__" ), size() + 1 );
+            state.put( fieldname.arrayElement( size() ).get(), o );
+            state.put( fieldname.arraySize().get(), size() + 1 );
             return true;
         }
 
+    }
+
+    
+    /**
+     * 
+     */
+    class CompositeCollectionPropertyImpl
+            extends CollectionPropertyImpl {
+
+        protected CompositeCollectionPropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
+            super( info, parentname );
+        }
+
+        @Override
+        public Object createValue() {
+            RecordCompositeState result = new RecordCompositeState( state, fieldname.arrayElement( size() ) );
+            state.put( fieldname.arraySize().get(), size() + 1 );
+            return result;
+        }
+
+        @Override
+        public Iterator iterator() {
+            return new Iterator() {
+                int size = size();
+                int index = 0;
+
+                @Override
+                public boolean hasNext() {
+                    return index < size;
+                }
+
+                @Override
+                public Object next() {
+                    assert Composite.class.isAssignableFrom( getInfo().getType() );
+                    return new RecordCompositeState( state, fieldname.arrayElement( index++ ) );
+                }
+
+                @Override
+                public void remove() {
+                    CompositeCollectionPropertyImpl.this.remove( index );
+                }
+            };
+        }
+        
     }
     
 }

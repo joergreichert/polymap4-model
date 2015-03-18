@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2012, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -14,15 +14,20 @@
  */
 package org.polymap.model2.engine;
 
+import java.util.AbstractCollection;
+import java.util.Iterator;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.Association;
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
+import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyBase;
 import org.polymap.model2.runtime.CompositeInfo;
@@ -50,14 +55,9 @@ public final class TemplateInstanceBuilder {
 
     public <T extends Composite> T newComposite( Class<T> entityClass ) { 
         try {
-            // new instance
             Constructor<?> ctor = entityClass.getConstructor( new Class[] {} );
             T instance = (T)ctor.newInstance( new Object[] {} );
             
-//            // set context
-//            contextField.set( instance, context );
-            
-            // init properties
             initProperties( instance );
             
             return instance;
@@ -101,16 +101,16 @@ public final class TemplateInstanceBuilder {
                         if (info.isComputed()) {
                             prop = new NotQueryableProperty( info );
                         }
-                        //
+                        // primitive or Composite
                         else {
-                            // Composite
-                            if (Composite.class.isAssignableFrom( info.getType() )) {
-                            }
-                            // primitive type
-                            else {
-                                prop = new PropertyImpl( info );
-                            }
+                            prop = new PropertyImpl( info );
                         }
+                    }
+
+                    // Collection
+                    else if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
+                        // primitive or Composite
+                        prop = new CollectionPropertyImpl( info );
                     }
 
                     // Association
@@ -118,16 +118,9 @@ public final class TemplateInstanceBuilder {
                         prop = new AssociationImpl( info );
                     }
 
-                    // Collection
-                    else if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
-//                        // Composite
-//                        if (Composite.class.isAssignableFrom( info.getType() )) {
-//                            prop = new CompositeCollectionPropertyImpl( context, storeProp );                            
-//                        }
-//                        // primitive type
-//                        else {
-//                            prop = new CollectionPropertyImpl( storeProp );
-//                        }
+                    // ManyAssociation
+                    else if (ManyAssociation.class.isAssignableFrom( field.getType() )) {
+                        prop = new ManyAssociationImpl( info );
                     }
 
                     // set field
@@ -143,20 +136,13 @@ public final class TemplateInstanceBuilder {
     /**
      * 
      */
-    public static class PropertyImpl<T>
+    public class PropertyImpl<T>
             implements Property<T>, TemplateProperty<T> {
 
-        private PropertyInfo<T>     info;
-        
-        public T                    value;
+        protected PropertyInfo<T>       info;
         
         protected PropertyImpl( PropertyInfo<T> info ) {
             this.info = info;
-        }
-
-        @Override
-        public TemplateProperty getTraversed() {
-            return null;
         }
 
         @Override
@@ -165,17 +151,25 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public void set( T value ) {
-            if (!info.isQueryable()) {
-                log.warn( "Property is not @Queryable: " + info.getName() );
-            }
-            this.value = value;
-        }        
+        public String toString() {
+            return "TemplateProperty[name=" + info.getName() + "]"; 
+        }
 
         @Override
         public T get() {
-            return value;
+//            if (Composite.class.isAssignableFrom( info.getType() )) {
+//                Class<Composite> type = (Class<Composite>)info.getType();
+//                return (T)new TemplateInstanceBuilder( repo, this ).newComposite( type );
+//            }
+//            else {
+                throw new ModelRuntimeException( "Calling get() on a query template is not allowed. Use Expressions.the() quantifier to query a Composite property." );
+//            }
         }
+
+        @Override
+        public void set( T value ) {
+            throw new ModelRuntimeException( "Calling set() on a query template is not allowed." );
+        }        
 
         @Override
         public T createValue( ValueInitializer<T> initializer ) {
@@ -183,62 +177,108 @@ public final class TemplateInstanceBuilder {
         }
     }
 
-    /**
-     * 
-     */
-    public static class AssociationImpl<T extends Entity>
-            implements Association<T>, TemplateProperty<T> {
-        
-        private PropertyInfo        info;
-        
-        protected AssociationImpl( PropertyInfo info ) {
-            this.info = info;
-        }
-
-        @Override
-        public PropertyInfo getInfo() {
-            return info;
-        }
-
-        @Override
-        public TemplateProperty getTraversed() {
-            return null;
-        }
-
-        @Override
-        public T get() {
-            // XXX Auto-generated method stub
-            throw new RuntimeException( "not yet implemented." );
-        }
-
-        @Override
-        public void set( T value ) {
-            // XXX Auto-generated method stub
-            throw new RuntimeException( "not yet implemented." );
-        }
-        
-    }
    
     /**
      * 
      */
-    public static class NotQueryableProperty<T>
-            implements Property<T>, TemplateProperty<T> {
-
-        private PropertyInfo<T>     info;
+    public class AssociationImpl<T extends Entity>
+            extends PropertyImpl<T>
+            implements Association<T>, TemplateProperty<T> {
         
-        protected NotQueryableProperty( PropertyInfo<T> info ) {
-            this.info = info;
+
+        protected AssociationImpl( PropertyInfo<T> info ) {
+            super( info );
         }
 
         @Override
-        public TemplateProperty getTraversed() {
-            return null;
+        public T get() {
+            Class<T> type = info.getType();
+            return new TemplateInstanceBuilder( repo ).newComposite( type );
+        }
+    }
+
+
+    /**
+     * 
+     */
+    public class CollectionPropertyImpl<T extends Entity>
+            extends AbstractCollection<T>
+            implements CollectionProperty<T>, TemplateProperty<T> {
+        
+        protected PropertyInfo<T>       info;
+        
+        
+        protected CollectionPropertyImpl( PropertyInfo<T> info ) {
+            this.info = info;
         }
 
         @Override
         public PropertyInfo getInfo() {
             return info;
+        }
+
+        @Override
+        public T createElement( ValueInitializer<T> initializer ) {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+
+        @Override
+        public int size() {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+    }
+
+
+    /**
+     * 
+     */
+    public class ManyAssociationImpl<T extends Entity>
+            extends AbstractCollection<T>
+            implements ManyAssociation<T>, TemplateProperty<T> {
+        
+        protected PropertyInfo<T>       info;
+        
+        
+        protected ManyAssociationImpl( PropertyInfo<T> info ) {
+            this.info = info;
+        }
+
+        @Override
+        public PropertyInfo getInfo() {
+            return info;
+        }
+
+        @Override
+        public boolean add( T e ) {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+
+        @Override
+        public int size() {
+            throw new ModelRuntimeException( "Method is not allowed on query template" );
+        }
+    }
+
+
+    /**
+     * 
+     */
+    public class NotQueryableProperty<T>
+            extends PropertyImpl<T>
+            implements Property<T>, TemplateProperty<T> {
+
+        public NotQueryableProperty( PropertyInfo<T> info ) {
+            super( info );
         }
 
         @Override

@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2014-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -14,9 +14,12 @@
  */
 package org.polymap.model2.store.recordstore;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.search.Query;
 
 import org.polymap.model2.Entity;
+import org.polymap.model2.PropertyBase;
 import org.polymap.model2.engine.TemplateProperty;
 import org.polymap.model2.query.grammar.BooleanExpression;
 
@@ -27,6 +30,8 @@ import org.polymap.model2.query.grammar.BooleanExpression;
  */
 abstract class LuceneExpressionHandler<T extends BooleanExpression> {
 
+    private static final Log log = LogFactory.getLog( LuceneExpressionHandler.class );
+
     protected LuceneQueryBuilder        builder;
     
     protected Class<? extends Entity>   resultType;
@@ -36,10 +41,26 @@ abstract class LuceneExpressionHandler<T extends BooleanExpression> {
     
     
     /**
-     * @see LuceneQueryBuilder#fieldname(org.polymap.model2.engine.TemplateProperty)
+     * @see LuceneQueryBuilder#simpleFieldname(TemplateProperty)
      */
-    public static StringBuilder fieldname( TemplateProperty property ) {
-        return LuceneQueryBuilder.fieldname( property );
+    public String simpleFieldname( PropertyBase property ) {
+        return LuceneQueryBuilder.simpleFieldname( (TemplateProperty)property );
+    }
+
+    /**
+     * @see LuceneQueryBuilder#prefixedFieldname(TemplateProperty)
+     */
+    public FieldnameBuilder prefixedFieldname( PropertyBase property ) {
+        return builder.prefixedFieldname( (TemplateProperty)property );
+    }
+
+    public void log( String op, Object... params ) {
+        StringBuilder buf = new StringBuilder( 256 );
+        for (Object param : params) {
+            buf.append( buf.length() > 0 ? ", " : "" );
+            buf.append( param.toString() );
+        }
+        log.debug( builder.logIndent + op + " : " + buf.toString() );    
     }
 
 }

@@ -41,7 +41,7 @@ public class LogConcern
     protected void log( String method ) {
         PropertyInfo info = delegate.getInfo();
         Entity entity = context.getCompositePart( Entity.class );
-        log.info( "LOG: property: " + entity.getClass().getSimpleName() + "." + info.getName() + "#" + method + "()" );        
+        //log.info( "LOG: property: " + entity.getClass().getSimpleName() + "." + info.getName() + "#" + method + "()" );        
     }
     
     @Override

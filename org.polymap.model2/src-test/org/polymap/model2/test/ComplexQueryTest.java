@@ -14,7 +14,12 @@
  */
 package org.polymap.model2.test;
 
+import static org.polymap.model2.query.Expressions.and;
+import static org.polymap.model2.query.Expressions.anyOf;
+import static org.polymap.model2.query.Expressions.eq;
 import static org.polymap.model2.query.Expressions.is;
+import static org.polymap.model2.query.Expressions.matches;
+import static org.polymap.model2.query.Expressions.the;
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.Log;
@@ -44,7 +49,7 @@ public abstract class ComplexQueryTest
 
     protected UnitOfWork            uow;
 
-    private Employee                ulli;
+    private Employee                ulli, az;
     
 
     public ComplexQueryTest( String name ) {
@@ -86,7 +91,7 @@ public abstract class ComplexQueryTest
                 return proto;
             }
         });
-        uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
+        az = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
             public Employee initialize( Employee proto ) throws Exception {
                 proto.firstname.set( "AZ" );
                 proto.name.set( "Zimmermann" );
@@ -97,12 +102,28 @@ public abstract class ComplexQueryTest
             public Company initialize( Company proto ) throws Exception {
                 proto.name.set( "ullis" );
                 proto.chief.set( ulli );
+                proto.employees.add( ulli );
+                proto.employees.add( az );
                 return proto;
             }
         });        
         uow.createEntity( Company.class, null, new ValueInitializer<Company>() {
             public Company initialize( Company proto ) throws Exception {
                 proto.name.set( "Irgendeine" );
+                proto.address.createValue( new ValueInitializer<Address>() {
+                    public Address initialize( Address a ) throws Exception {
+                        a.street.set( "Südstrasse" );
+                        a.nr.set( 6 );
+                        return a;
+                    }
+                });
+                proto.moreAddresses.createElement( new ValueInitializer<Address>() {
+                    public Address initialize( Address a ) throws Exception {
+                        a.street.set( "Weststrasse" );
+                        a.nr.set( 1 );
+                        return a;
+                    }
+                });
                 return proto;
             }
         });        
@@ -110,21 +131,96 @@ public abstract class ComplexQueryTest
     
     
     protected void doQueries() {
-        // association is
+//        collection();
+        composite();
+        compositeCollection();
+        associationIs();
+        association();
+        manyAssociationContains();
+    }
+    
+    
+//    protected void collection() {
+//        Company wanted = Expressions.template( Company.class, repo );
+//        
+//        ResultSet<Company> rs = uow.query( Company.class )
+//                .where( Expressions.eq( wanted.docs, "Philipp" ) ) )
+//                .execute();
+//        assertEquals( 1, rs.size() );
+//        assertEquals( 1, Iterables.size( rs ) );
+//    }
+
+    
+    protected void composite() {
+        Company wanted = Expressions.template( Company.class, repo );
+        Address address = Expressions.template( Address.class, repo );
+        
+        ResultSet<Company> rs = uow.query( Company.class )
+                .where( the( wanted.address,
+                        and( 
+                            matches( address.street, "Südstr*" ), 
+                            eq( address.nr, 6 ) ) ) )
+                .execute();
+        
+//        ResultSet<Company> rs = uow.query( Company.class )
+//                .where( eq( wanted.moreAddresses.any().street, "süd" ) )
+//                .execute();
+
+        assertEquals( 1, rs.size() );
+        assertEquals( 1, Iterables.size( rs ) );
+    }
+
+    
+    protected void compositeCollection() {
+        Company wanted = Expressions.template( Company.class, repo );
+        Address address = Expressions.template( Address.class, repo );
+        
+        ResultSet<Company> rs = uow.query( Company.class )
+                .where( anyOf( wanted.moreAddresses, 
+                        and( 
+                            eq( address.street, "Weststrasse" ), 
+                            eq( address.nr, 1 ) ) ) )
+                .execute();
+        
+        assertEquals( 1, rs.size() );
+        assertEquals( 1, Iterables.size( rs ) );
+    }
+
+    
+    protected void associationIs() {
         Company wanted = Expressions.template( Company.class, repo );
         ResultSet<Company> rs = uow.query( Company.class )
                 .where( is( wanted.chief, ulli ) )
                 .execute();
         assertEquals( 1, rs.size() );
         assertEquals( 1, Iterables.size( rs ) );
-        
-//        //
-//        Employee wantedChief = Expressions.template( Employee.class, repo );
-//        rs = uow.query( Company.class )
-//                .where( is( wanted.chief, eq( wantedChief.name, "Phillip" ) ) )
-//                .execute();
-//        assertEquals( 1, rs.size() );
-//        assertEquals( 1, Iterables.size( rs ) );
     }
+
     
+    protected void association() {
+        Company wanted = Expressions.template( Company.class, repo );
+        Employee employee = Expressions.template( Employee.class, repo );
+        
+        ResultSet<Company> rs = uow.query( Company.class )
+                .where( the( wanted.chief, eq( employee.name, "Philipp" ) ) )
+                .execute();
+        assertEquals( 1, rs.size() );
+        assertEquals( 1, Iterables.size( rs ) );
+    }
+
+    
+    protected void manyAssociationContains() {
+        Company wanted = Expressions.template( Company.class, repo );
+        Employee employee = Expressions.template( Employee.class, repo );
+        
+        ResultSet<Company> rs = uow.query( Company.class )
+                .where( anyOf( wanted.employees, 
+                        and( 
+                            eq( employee.name, "Philipp" ),
+                            eq( employee.firstname, "Ulli" ) ) ) )
+                .execute();
+        assertEquals( 1, rs.size() );
+        assertEquals( 1, Iterables.size( rs ) );
+    }
+
 }

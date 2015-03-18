@@ -20,19 +20,26 @@ import org.polymap.model2.Association;
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
+import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
 import org.polymap.model2.engine.TemplateInstanceBuilder;
 import org.polymap.model2.engine.TemplateProperty;
 import org.polymap.model2.query.grammar.AssociationEquals;
 import org.polymap.model2.query.grammar.BooleanExpression;
-import org.polymap.model2.query.grammar.ComparisonPredicate;
+import org.polymap.model2.query.grammar.CompositeCollectionQuantifier;
 import org.polymap.model2.query.grammar.Conjunction;
 import org.polymap.model2.query.grammar.Disjunction;
 import org.polymap.model2.query.grammar.IdPredicate;
+import org.polymap.model2.query.grammar.ManyAssociationQuantifier;
 import org.polymap.model2.query.grammar.Negation;
 import org.polymap.model2.query.grammar.PropertyEquals;
+import org.polymap.model2.query.grammar.PropertyEqualsAny;
 import org.polymap.model2.query.grammar.PropertyMatches;
 import org.polymap.model2.query.grammar.PropertyNotEquals;
+import org.polymap.model2.query.grammar.Quantifier;
+import org.polymap.model2.query.grammar.Quantifier.Type;
+import org.polymap.model2.query.grammar.TheAssociationQuantifier;
+import org.polymap.model2.query.grammar.TheCompositeQuantifier;
 import org.polymap.model2.runtime.EntityRepository;
 
 /**
@@ -42,6 +49,20 @@ import org.polymap.model2.runtime.EntityRepository;
  */
 public class Expressions {
 
+    public static final BooleanExpression TRUE = new BooleanExpression() {
+        @Override
+        public boolean evaluate( Composite target ) {
+            return true;
+        }
+    };
+    
+    public static final BooleanExpression FALSE = new BooleanExpression() {
+        @Override
+        public boolean evaluate( Composite target ) {
+            return false;
+        }
+    };
+    
     public static Conjunction and( BooleanExpression first, BooleanExpression second, BooleanExpression... more ) {
         return new Conjunction( Lists.asList( first, second, more ).toArray( new BooleanExpression[2+more.length] ) );                                                                               
     }
@@ -74,52 +95,94 @@ public class Expressions {
         return new PropertyMatches( (TemplateProperty)prop, value );
     }
     
-    /**
-     * True if there is at least one element in the collection that matches the
-     * given sub comparison predicate.
-     */
-    public static <T> void any( CollectionProperty<T> prop, ComparisonPredicate<T> sub ) {
-        throw new RuntimeException( "not yet implemented" );
+    public static <T> PropertyEqualsAny<T> eqAny( Property<T> prop, T... values ) {
+        return new PropertyEqualsAny( (TemplateProperty)prop, values );
     }
     
-    /**
-     * True if all elements of the collection fulfill the given sub expression.
-     */
-    public static <T> void all( CollectionProperty<T> prop, ComparisonPredicate<T> sub ) {
-        throw new RuntimeException( "not yet implemented" );
-    }
-    
-    public static <T extends Composite> void any( CollectionProperty<T> prop, BooleanExpression sub ) {
-        throw new RuntimeException( "not yet implemented" );
-    }
-    
-    public static <T extends Composite> void all( CollectionProperty<T> prop, BooleanExpression sub ) {
-        throw new RuntimeException( "not yet implemented" );
-    }
+//    public static <T> PropertyEqualsAny<T> eqAny( Property<T> prop, Iterable<T> values ) {
+//        ArrayList<T> l = Lists.newArrayList( values );
+//        T[] a = l.toArray( new T[ l.size() ] );
+//        return new PropertyEqualsAny( (TemplateProperty)prop, a );
+//    }
     
     public static <T extends Entity> AssociationEquals<T> is( Association<T> assoc, T entity ) {
         return new AssociationEquals( (TemplateProperty)assoc, id( entity ) );
     }
 
-    public static <T extends Entity> AssociationEquals<T> is( Association<T> assoc, BooleanExpression sub ) {
-        return new AssociationEquals( (TemplateProperty)assoc, sub );
+    public static <T extends Entity> AssociationEquals<T> isAnyOf( Association<T> assoc, T... entities ) {
+        return new AssociationEquals( (TemplateProperty)assoc, id( entities ) );
     }
 
-    public static <T extends Entity> IdPredicate<T> id( Object id ) {
-        return new IdPredicate( id );
+//    public static <T extends Entity> AssociationEquals<T> isAnyOf( Association<T> assoc, Iterable<T> entities ) {
+//        ArrayList<T> l = Lists.newArrayList( entities );
+//        l.toArray( new T[] );
+//        return new AssociationEquals( (TemplateProperty)assoc, id( entities ) );
+//    }
+
+    /**
+     * True if {@link Entity#id()} of the target Entity of the {@link Query} is in
+     * the given array of ids.
+     */
+    public static <T extends Entity> IdPredicate<T> id( Object... ids ) {
+        return new IdPredicate( ids );
+    }
+    
+    /**
+     * True if {@link Entity#id()} of the target Entity of the {@link Query} equals
+     * an id of one of the given Entities.
+     */
+    public static <T extends Entity> IdPredicate<T> id( T... entities ) {
+        Object[] ids = new Object[entities.length];
+        for (int i=0; i<entities.length; i++) {
+            ids[i] = entities[i].id();
+        }
+        return new IdPredicate( ids );
     }
 
-    public static <T extends Entity> IdPredicate<T> id( T entity ) {
-        return new IdPredicate( entity.id() );
+    // Quantifiers ****************************************
+    
+    /**
+     * Queries an {@link Association}. True if the associated {@link Entity} matches
+     * the given sub-expression.
+     */
+    public static <T extends Entity> Quantifier the( Association<T> prop, BooleanExpression subExp ) {
+        return new TheAssociationQuantifier( prop, subExp );
     }
-
+    
+    /**
+     * Queries a single Composite property. True if the Composite matches the given
+     * sub-expression.
+     */
+    public static <T extends Composite> Quantifier the( Property<T> prop, BooleanExpression subExp ) {
+        return new TheCompositeQuantifier( prop, subExp );
+    }
+    
+    /**
+     * True if ANY member of the given Composite collection matches the given
+     * sub-expression.
+     */
+    public static <T extends Composite> Quantifier anyOf( CollectionProperty<T> prop, BooleanExpression subExp ) {
+        return new CompositeCollectionQuantifier( Type.ANY, prop, subExp );
+    }
+    
+    /**
+     * True if ANY member of the given association matches the given sub-expression.
+     */
+    public static <T extends Entity> Quantifier anyOf( ManyAssociation<T> prop, BooleanExpression subExp ) {
+        return new ManyAssociationQuantifier( Type.ANY, prop, subExp );
+    }
+    
+    // Template *******************************************
+    
+    /**
+     * Returns query template of the given {@link Composite} type.
+     *
+     * @param type
+     * @param repo
+     * @return Newly created query template instance.
+     */
     public static <T extends Composite> T template( Class<T> type, EntityRepository repo ) {
         return new TemplateInstanceBuilder( repo ).newComposite( type );
     }
-    
-    public static <T extends Composite> T template( CollectionProperty<T> prop, EntityRepository repo ) {
-        Class<T> type = prop.getInfo().getType();
-        return new TemplateInstanceBuilder( repo ).newComposite( type );
-    }
-    
+
 }

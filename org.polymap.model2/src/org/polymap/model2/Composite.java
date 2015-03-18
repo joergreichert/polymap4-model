@@ -64,7 +64,7 @@ public abstract class Composite {
      */
     @Override
     public boolean equals( Object obj ) {
-        throw new UnsupportedOperationException( "Composite (mixin or Composite property value) does not support equals()." );
+        throw new UnsupportedOperationException( "Composite (mixin or Composite property value) does not provide a default implementation of equals()." );
     }
 
 }

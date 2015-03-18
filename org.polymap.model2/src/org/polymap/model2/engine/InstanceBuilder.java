@@ -36,6 +36,7 @@ import org.polymap.model2.Composite;
 import org.polymap.model2.Computed;
 import org.polymap.model2.ComputedProperty;
 import org.polymap.model2.Concerns;
+import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyBase;
 import org.polymap.model2.PropertyConcern;
@@ -189,7 +190,7 @@ public final class InstanceBuilder {
                         assert info.isAssociation();
                         // check Computed
                         if (info.isComputed()) {
-                            throw new UnsupportedOperationException( "Computed Association is not supported yet.");
+                            throw new UnsupportedOperationException( "Computed Association is not supported yet: " + propName( field ));
                         }
                         StoreProperty storeProp = state.loadProperty( info );
                         prop = new AssociationImpl( context, storeProp );
@@ -200,9 +201,26 @@ public final class InstanceBuilder {
                         }
                     }
 
+                    // ManyAssociation
+                    else if (ManyAssociation.class.isAssignableFrom( field.getType() )) {
+                        assert info.isAssociation();
+                        assert info.getMaxOccurs() > 1 : "Field has improper @MaxOccurs: " + propName( field );
+                        // check Computed
+                        if (info.isComputed()) {
+                            throw new UnsupportedOperationException( "Computed ManyAssociation is not supported yet: " + propName( field ));
+                        }
+                        StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
+                        prop = new ManyAssociationImpl( context, storeProp );
+                        // FIXME prop = new ConstraintsAssociationInterceptor( (Association)prop, (EntityRuntimeContextImpl)context );
+                        // concerns
+                        for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
+                            prop = concern;
+                        }
+                    }
+
                     // Collection
                     else if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
-                        assert info.getMaxOccurs() > 1;
+                        assert info.getMaxOccurs() > 1 : "Field has improper @MaxOccurs: " + propName( field );
                         StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
                         // Composite
                         if (Composite.class.isAssignableFrom( info.getType() )) {
@@ -210,7 +228,7 @@ public final class InstanceBuilder {
                         }
                         // primitive type
                         else {
-                            prop = new CollectionPropertyImpl( storeProp );
+                            prop = new CollectionPropertyImpl( context, storeProp );
                         }
                         if (info.isNullable()) {
                             throw new ModelRuntimeException( "CollectionProperty cannot be @Nullable." );
@@ -232,6 +250,11 @@ public final class InstanceBuilder {
     }
 
 
+    protected String propName( Field field ) {
+        return field.getDeclaringClass().getSimpleName() + "#" + field.getName();
+    }
+
+    
     protected Iterable<PropertyConcernBase> fieldConcerns( final Field field, final PropertyBase prop ) throws Exception {
         List<Class> concernTypes = concerns.get( field, new Loader<Field,List<Class>>() {
             public List<Class> load( Field key ) {

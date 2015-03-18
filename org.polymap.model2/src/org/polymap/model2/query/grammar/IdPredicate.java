@@ -25,18 +25,23 @@ import org.polymap.model2.Entity;
 public class IdPredicate<T extends Entity>
         extends Predicate {
 
-    public Object           id;
+    public Object[]             ids;
 
     
-    public IdPredicate( Object id ) {
-        assert id != null;
-        this.id = id;
+    public IdPredicate( Object... ids ) {
+        assert ids != null && ids.length > 0;
+        this.ids = ids;
     }
 
     
     @Override
     public boolean evaluate( Composite target ) {
-        return target != null && ((Entity)target).id().equals( id );
+        for (Object id : ids) {
+            if (((Entity)target).id().equals( id )) {
+                return true;
+            }
+        }
+        return false;
     }
     
 }

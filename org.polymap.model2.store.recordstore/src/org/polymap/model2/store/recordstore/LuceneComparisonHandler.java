@@ -45,14 +45,16 @@ class LuceneComparisonHandler
         if (value instanceof Enum) {
             value = value.toString();
         }
-        String fieldname = LuceneQueryBuilder.fieldname( prop ).toString();
+        String fieldname = prefixedFieldname( prop ).get();
 
         // eq
         if (predicate instanceof PropertyEquals) {
+            log( "EQUALS", fieldname + "==" + value );
             return builder.valueCoders.searchQuery( new QueryExpression.Equal( fieldname, value ) ); 
         }
         // notEq
         else if (predicate instanceof PropertyNotEquals) {
+            log( "NOT-EQUALS", fieldname + "==" + value );
             Query query = builder.valueCoders.searchQuery( new QueryExpression.Equal( fieldname, value ) ); 
             BooleanQuery result = new BooleanQuery();
             result.add( LuceneQueryBuilder.ALL, BooleanClause.Occur.SHOULD );
@@ -77,6 +79,7 @@ class LuceneComparisonHandler
 //        }
         // matches
         else if (predicate instanceof PropertyMatches) {
+            log( "MATCHES", fieldname + ":" + value );
             return builder.valueCoders.searchQuery( new QueryExpression.Match( fieldname, value ) ); 
         }
         else {

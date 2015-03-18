@@ -18,6 +18,7 @@ import java.util.AbstractCollection;
 import java.util.Iterator;
 
 import org.polymap.model2.CollectionProperty;
+import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.PropertyInfo;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.StoreCollectionProperty;
@@ -31,10 +32,13 @@ class CollectionPropertyImpl<T>
         extends AbstractCollection<T>
         implements CollectionProperty<T> {
 
+    protected EntityRuntimeContext          entityContext;
+
     protected StoreCollectionProperty<T>    storeProp;
     
 
-    public CollectionPropertyImpl( StoreCollectionProperty storeProp ) {
+    public CollectionPropertyImpl( EntityRuntimeContext context, StoreCollectionProperty storeProp ) {
+        this.entityContext = context;
         this.storeProp = storeProp;
     }
 

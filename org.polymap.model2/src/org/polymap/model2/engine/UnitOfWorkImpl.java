@@ -132,7 +132,7 @@ public class UnitOfWorkImpl
 
         boolean ok = loaded.putIfAbsent( id, result );
         if (!ok) {
-            throw new ModelRuntimeException( "ID of newly created Entity already exists." );
+            throw new ModelRuntimeException( "ID of newly created Entity already exists: " + id );
         }
         modified.put( id, result );
         
@@ -212,8 +212,9 @@ public class UnitOfWorkImpl
 
     @Override
     public void removeEntity( Entity entity ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        assert entity != null : "entity must not be null.";
+        checkOpen();
+        repo.contextOfEntity( entity ).raiseStatus( EntityStatus.REMOVED );
     }
 
 
@@ -258,7 +259,7 @@ public class UnitOfWorkImpl
                                             return true;
                                         }
                                         else if (expression instanceof BooleanExpression) {
-                                            return ((BooleanExpression)expression).evaluate( entity );
+                                            return expression.evaluate( entity );
                                         }
                                         else {
                                             return storeUow.evaluate( entity.state(), expression );

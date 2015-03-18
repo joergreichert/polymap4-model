@@ -77,6 +77,27 @@ public abstract class ComplexModelTest
     }
     
 
+    public void testManyAssociation() {
+        Company company = uow.createEntity( Company.class, null );
+        Employee employee = uow.createEntity( Employee.class, null );
+        company.employees.add( employee );
+        
+        assertEquals( 1, company.employees.size() );
+        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
+        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
+        
+        uow.commit();
+
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Company company2 = uow2.entity( Company.class, company.id() );
+        log.info( "Company: " + company2 );
+
+        assertEquals( 1, company2.employees.size() );
+        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
+        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
+    }
+
+    
     public void testCompositeProperty() {
         Company company = uow.createEntity( Company.class, null );
         

@@ -27,7 +27,7 @@ public abstract class Query<T extends Entity> {
 
     public Class<T>             resultType;
 
-    public Object               expression;
+    public BooleanExpression    expression;
 
     public int                  firstResult = 0;
 
@@ -68,7 +68,7 @@ public abstract class Query<T extends Entity> {
      *        dependent filter expression.
      * @return this
      */
-    public Query<T> where( @SuppressWarnings("hiding") Object expression ) {
+    public Query<T> where( @SuppressWarnings("hiding") BooleanExpression expression ) {
         this.expression = expression;
         return this;
     }
@@ -81,10 +81,10 @@ public abstract class Query<T extends Entity> {
      * @param expression
      * @return this
      */
-    public Query<T> and( @SuppressWarnings("hiding") BooleanExpression expression ) {
+    public Query<T> andWhere( @SuppressWarnings("hiding") BooleanExpression expression ) {
         assert this.expression != null : "Set expression via #where() before calling #and().";
         assert this.expression instanceof BooleanExpression : "Adding more expressions is supported for BooleanExpression only.";
-        this.expression = Expressions.and( ((BooleanExpression)this.expression), expression );
+        this.expression = Expressions.and( (this.expression), expression );
         return this;
     }
     

@@ -15,6 +15,10 @@
 package org.polymap.model2.query.grammar;
 
 import org.polymap.model2.Composite;
+import org.polymap.model2.Property;
+import org.polymap.model2.PropertyBase;
+import org.polymap.model2.engine.TemplateProperty;
+import org.polymap.model2.runtime.PropertyInfo;
 
 /**
  * 
@@ -37,5 +41,25 @@ public abstract class BooleanExpression {
      * @return true If boolean expression evaluates to TRUE for the target object.
      */
     public abstract boolean evaluate( Composite target );
+
     
+    // util methods
+    
+    protected <P extends PropertyBase<T>,T> P targetProp( Composite target, TemplateProperty<T> prop ) {
+        assert target != null;
+        assert prop != null;
+        String propName = prop.getInfo().getName();
+        PropertyInfo propInfo = target.info().getProperty( propName );
+        return (P)propInfo.get( target );
+    }
+    
+    protected <T> T propValue( Composite target, TemplateProperty<T> prop ) {
+        assert target != null;
+        assert prop != null;
+        String propName = prop.getInfo().getName();
+        PropertyInfo propInfo = target.info().getProperty( propName );
+        Property<T> targetProp = (Property<T>)propInfo.get( target );
+        return targetProp.get();
+    }
+
 }

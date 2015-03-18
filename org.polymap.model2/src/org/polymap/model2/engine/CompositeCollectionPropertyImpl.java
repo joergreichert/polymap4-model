@@ -37,8 +37,6 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
 
     private static Log log = LogFactory.getLog( CompositeCollectionPropertyImpl.class );
 
-    private EntityRuntimeContext            entityContext;
-
     /**
      * Cache of the Composite value. As building the Composite is an expensive
      * operation the Composite and the corresponding {@link CompositeState} is cached
@@ -50,8 +48,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
 
     
     public CompositeCollectionPropertyImpl( EntityRuntimeContext entityContext, StoreCollectionProperty storeProp ) {
-        super( storeProp );
-        this.entityContext = entityContext;
+        super( entityContext, storeProp );
     }
 
     

@@ -30,7 +30,7 @@ import org.polymap.model2.query.grammar.Negation;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class LuceneJunctionHandler
+class LuceneJunctionHandler
         extends LuceneExpressionHandler<BooleanExpression> {
 
     private static Log log = LogFactory.getLog( LuceneJunctionHandler.class );
@@ -40,27 +40,30 @@ public class LuceneJunctionHandler
     public Query handle( BooleanExpression expression ) {
         // AND
         if (expression instanceof Conjunction) {
+            log( "AND", "" );
             Conjunction conjunction = (Conjunction)expression;
             BooleanQuery result = new BooleanQuery();
             for (BooleanExpression child : conjunction.children) {
-                Query left = builder.processExpression( child, resultType );
+                Query left = builder.processExpression( null, child, resultType );
                 result.add( left, BooleanClause.Occur.MUST );                
             }
             return result;
         }
         // OR
         else if (expression instanceof Disjunction) {
+            log( "OR", "" );
             Disjunction disjunction = (Disjunction)expression;
             BooleanQuery result = new BooleanQuery();
             for (BooleanExpression child : disjunction.children) {
-                Query left = builder.processExpression( child, resultType );
+                Query left = builder.processExpression( null, child, resultType );
                 result.add( left, BooleanClause.Occur.SHOULD );                
             }
             return result;
         }
         // NOT
         else if (expression instanceof Negation) {
-            Query arg = builder.processExpression( ((Negation)expression).children[0], resultType );
+            log( "NOT", "" );
+            Query arg = builder.processExpression( null, ((Negation)expression).children[0], resultType );
             BooleanQuery result = new BooleanQuery();
             result.add( LuceneQueryBuilder.ALL, BooleanClause.Occur.SHOULD );
             result.add( arg, BooleanClause.Occur.MUST_NOT );
