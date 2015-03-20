@@ -18,8 +18,14 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 
-import org.apache.commons.logging.LogFactory;
+import org.geotools.data.DataAccess;
+import org.geotools.data.FeatureSource;
+import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.FeatureType;
+
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
@@ -58,7 +64,7 @@ public class FeatureStoreAdapter
     
         // check/create/update schemas
 //        FeatureStoreUnitOfWork uow = (FeatureStoreUnitOfWork)createUnitOfWork();
-        for (Class<? extends Entity> entityClass : repo.getConfig().getEntities()) {
+        for (Class<? extends Entity> entityClass : repo.getConfig().entities.get()) {
             
             // is entityClass complex?
             boolean isComplex = false;

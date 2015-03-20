@@ -20,7 +20,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import org.polymap.model2.Entity;
 

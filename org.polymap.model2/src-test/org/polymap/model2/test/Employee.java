@@ -43,11 +43,13 @@ public class Employee
     public Property<Integer>        jap;
     
     @Defaults
+    @NameInStore("defaultStr") // shapefile supports 10 chars in name
     public Property<String>         defaultString;
     
     @Defaults
     public Property<Date>           defaultDate;
 
+    @NameInStore("nonNullabl") // shapefile supports 10 chars in name
     public Property<String>         nonNullable;
 
     @Nullable

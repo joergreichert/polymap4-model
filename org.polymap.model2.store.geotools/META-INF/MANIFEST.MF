@@ -4,4 +4,8 @@ Bundle-Name: Geotools Store Backend
 Bundle-SymbolicName: org.polymap.model2.store.geotools
 Bundle-Version: 1.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Require-Bundle: org.polymap.model2;bundle-version="1.0.0"
+Require-Bundle: org.polymap.model2;bundle-version="3.0.0",
+ org.polymap.core;bundle-version="4.0.0",
+ org.polymap.core.data;bundle-version="4.0.0"
+Import-Package: org.apache.commons.logging
+Export-Package: org.polymap.model2.store.geotools

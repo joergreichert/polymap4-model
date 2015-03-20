@@ -16,8 +16,6 @@ package org.polymap.model2.test;
 
 import java.util.Date;
 
-import java.awt.Point;
-
 import org.polymap.model2.Concerns;
 import org.polymap.model2.DefaultValue;
 import org.polymap.model2.Description;
@@ -37,7 +35,7 @@ import org.polymap.model2.Property;
 public abstract class Person
         extends Entity {
     
-    protected Property<Point>       geom;
+    //protected Property<Point>       geom;
 
     @Nullable
     @Concerns( InvocationCountConcern.class )

@@ -18,9 +18,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.geotools.feature.AttributeImpl;
+import org.opengis.feature.Association;
+import org.opengis.feature.Attribute;
+import org.opengis.feature.ComplexAttribute;
+import org.opengis.feature.Feature;
+import org.opengis.feature.Property;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.PropertyDescriptor;
+
 import com.google.common.collect.Lists;
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
-import com.sun.xml.internal.stream.events.AttributeImpl;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.runtime.PropertyInfo;

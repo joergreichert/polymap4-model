@@ -21,10 +21,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.CollectionPropertyConcernAdapter;
-import org.polymap.model2.Entity;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyConcern;
-import org.polymap.model2.runtime.PropertyInfo;
 import org.polymap.model2.runtime.ValueInitializer;
 
 /**
@@ -39,9 +37,9 @@ public class LogConcern
     private static Log log = LogFactory.getLog( LogConcern.class );
 
     protected void log( String method ) {
-        PropertyInfo info = delegate.getInfo();
-        Entity entity = context.getCompositePart( Entity.class );
-        //log.info( "LOG: property: " + entity.getClass().getSimpleName() + "." + info.getName() + "#" + method + "()" );        
+//        PropertyInfo info = delegate.getInfo();
+//        Entity entity = context.getCompositePart( Entity.class );
+//        log.info( "LOG: property: " + entity.getClass().getSimpleName() + "." + info.getName() + "#" + method + "()" );        
     }
     
     @Override

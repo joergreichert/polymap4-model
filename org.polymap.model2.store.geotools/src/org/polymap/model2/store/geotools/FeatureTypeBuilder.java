@@ -23,8 +23,28 @@ import java.util.List;
 
 import java.lang.reflect.Field;
 
-import org.apache.commons.logging.LogFactory;
+import org.geotools.feature.NameImpl;
+import org.geotools.feature.type.FeatureTypeFactoryImpl;
+import org.geotools.referencing.CRS;
+import org.geotools.util.SimpleInternationalString;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.AttributeType;
+import org.opengis.feature.type.ComplexType;
+import org.opengis.feature.type.FeatureType;
+import org.opengis.feature.type.FeatureTypeFactory;
+import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.feature.type.GeometryType;
+import org.opengis.feature.type.Name;
+import org.opengis.feature.type.PropertyDescriptor;
+import org.opengis.filter.Filter;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.util.InternationalString;
+
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
 
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
@@ -81,10 +101,23 @@ class FeatureTypeBuilder {
             if (prop instanceof GeometryDescriptor)
                 geom = (GeometryDescriptor)prop;
         }
+        // build fake geom descriptor
+        if (geom == null) {
+            geom = buildFakeGeom();
+        }
         
         return factory.createFeatureType( complexType.getName(), complexType.getDescriptors(),
                 geom, complexType.isIdentified(), complexType.getRestrictions(),
                 complexType.getSuper(), complexType.getDescription() );
+    }
+
+
+    protected GeometryDescriptor buildFakeGeom() {
+        GeometryType geomType = factory.createGeometryType( new NameImpl( "geom" ),
+                Point.class, crs, false, false, null, null, null );
+
+        return factory.createGeometryDescriptor( geomType, 
+                geomType.getName(), 0, 1, true, null );
     }
     
     

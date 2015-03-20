@@ -22,11 +22,22 @@ import java.util.function.Supplier;
 
 import java.io.IOException;
 
-import javafx.geometry.BoundingBox;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.collection.DelegateFeatureIterator;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.util.NullProgressListener;
+import org.opengis.feature.Feature;
+import org.opengis.feature.FeatureVisitor;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.FeatureType;
+import org.opengis.filter.Filter;
+import org.opengis.filter.sort.SortBy;
+import org.opengis.geometry.BoundingBox;
+import org.opengis.util.ProgressListener;
 
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
-
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.core.runtime.LazyInit;
 import org.polymap.core.runtime.LockedLazyInit;
@@ -93,20 +104,7 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
 
     @Override
     public FeatureIterator features() {
-        return new DelegateFeatureIterator<F>( this, data.values().iterator() );
-    }
-
-    @Override
-    public Iterator iterator() {
-        return data.values().iterator();
-    }
-
-    @Override
-    public void close( FeatureIterator close ) {
-    }
-
-    @Override
-    public void close( Iterator close ) {
+        return new DelegateFeatureIterator<F>( data.values().iterator() );
     }
 
     @Override
@@ -116,7 +114,7 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
             float size = size();
             float position = 0;            
             progress.started();
-            Iterator<F> it = iterator();
+            Iterator<F> it = data.values().iterator();
             while (!progress.isCanceled() && it.hasNext()) {
                 progress.progress( position++/size );
                 try {
@@ -132,7 +130,6 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
         }   
     }
 
-    @Override
     public boolean add( F feature ) {
         if (feature == null) {
             return false;
@@ -158,30 +155,6 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
     }
 
     @Override
-    public boolean addAll( Collection collection ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public boolean addAll( FeatureCollection resource ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public void addListener( CollectionListener listener ) throws NullPointerException {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public void removeListener( CollectionListener listener ) throws NullPointerException {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
     public FeatureCollection subCollection( Filter filter ) {
         // XXX Auto-generated method stub
         throw new RuntimeException( "not yet implemented." );
@@ -189,18 +162,6 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
 
     @Override
     public FeatureCollection sort( SortBy order ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public void purge() {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public void clear() {
         // XXX Auto-generated method stub
         throw new RuntimeException( "not yet implemented." );
     }
@@ -219,24 +180,6 @@ public class MemoryFeatureCollection<T extends FeatureType, F extends Feature>
 
     @Override
     public boolean isEmpty() {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public boolean remove( Object o ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public boolean removeAll( Collection c ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
-    }
-
-    @Override
-    public boolean retainAll( Collection c ) {
         // XXX Auto-generated method stub
         throw new RuntimeException( "not yet implemented." );
     }

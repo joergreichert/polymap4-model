@@ -28,33 +28,45 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
-
 import java.io.IOException;
 
-import org.apache.commons.collections.ListUtils;
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
+import org.geotools.data.DefaultTransaction;
+import org.geotools.data.FeatureSource;
+import org.geotools.data.FeatureStore;
+import org.geotools.data.Transaction;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.NameImpl;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.FeatureType;
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory;
+import org.opengis.filter.identity.FeatureId;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
-import com.sun.xml.internal.messaging.saaj.soap.name.NameImpl;
-
-import org.polymap.core.runtime.ConcurrentReferenceHashMap;
-import org.polymap.core.runtime.ConcurrentReferenceHashMap.ReferenceType;
+import org.polymap.core.runtime.Closer;
 import org.polymap.core.runtime.LazyInit;
 import org.polymap.core.runtime.PlainLazyInit;
-import org.polymap.core.runtime.cache.CacheLoader;
 
 import org.polymap.model2.Entity;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
-import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
+import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.store.CompositeState;
+import org.polymap.model2.store.CompositeStateReference;
 import org.polymap.model2.store.StoreRuntimeContext;
 import org.polymap.model2.store.StoreUnitOfWork;
 
@@ -82,13 +94,6 @@ public class FeatureStoreUnitOfWork
     /** Never evicting cache of used {@link FeatureSource} instances. */
     private LoadingCache<Class<? extends Entity>,FeatureStore> featureSources;
     
-    /**
-     * Buffers results of {@link #executeQuery(QueryImpl)} for subsequent calls of
-     * {@link #loadEntityState(Object, Class)} in order to avoid to hit the store.
-     */
-    private Map<Object,Feature>         found = new ConcurrentReferenceHashMap( 256, 0.75f, 4, ReferenceType.STRONG, ReferenceType.SOFT, null );
-
-
     
     protected FeatureStoreUnitOfWork( StoreRuntimeContext context, FeatureStoreAdapter store ) {
         this.store = store;
@@ -121,29 +126,22 @@ public class FeatureStoreUnitOfWork
 
     @Override
     public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass ) {
-        Feature feature = found.remove( id );
-        
-        if (feature == null) {
-            FeatureStore fs = featureSource( entityClass );
-            FeatureIterator it = null;
-            try {
-                FeatureCollection features = fs.getFeatures(
-                        ff.id( Collections.singleton( ff.featureId( (String)id ) ) ) );
-                it = features.features();
-                feature = it.hasNext() ? it.next() : null;
-            }
-            catch (Exception e) {
-                throw new ModelRuntimeException( e );
-            }
-            finally {
-                if (it != null) { it.close(); }
-            }
+        FeatureStore fs = featureSource( entityClass );
+        FeatureIterator it = null;
+        try {
+            FeatureCollection features = fs.getFeatures(
+                    ff.id( Collections.singleton( ff.featureId( (String)id ) ) ) );
+            it = features.features();
+            Feature feature = it.hasNext() ? it.next() : null;
+            assert feature != null : "Possible BUG: No feature found for id: " + id;
+            return new FeatureCompositeState( feature, this );
         }
-        else {
-            log.trace( "loadEntityState(): Feature state found." );
+        catch (Exception e) {
+            throw new ModelRuntimeException( e );
         }
-        assert feature != null : "Possible BUG: No feature found for id: " + id;
-        return new FeatureCompositeState( feature, this );
+        finally {
+            if (it != null) { it.close(); }
+        }
     }
 
 
@@ -167,7 +165,7 @@ public class FeatureStoreUnitOfWork
         }
         else if (schema instanceof SimpleFeatureType) {
             feature = SimpleFeatureBuilder.build( (SimpleFeatureType)schema, 
-                    ListUtils.EMPTY_LIST, (String)id );
+                    Collections.EMPTY_LIST, (String)id );
         }
         else {
             throw new UnsupportedOperationException( "Unable to build feature for schema: " + schema );
@@ -178,7 +176,7 @@ public class FeatureStoreUnitOfWork
 
 
     @Override
-    public Collection executeQuery( Query query ) {
+    public Collection<CompositeStateReference> executeQuery( Query query ) {
         assert query.expression == null || query.expression instanceof Filter : "Wrong query expression type: " + query.expression;
         try {
             // schema
@@ -186,44 +184,52 @@ public class FeatureStoreUnitOfWork
             FeatureType schema = fs.getSchema();
 
             // features
-            DefaultQuery featureQuery = new DefaultQuery( schema.getName().getLocalPart() );
+            org.geotools.data.Query featureQuery = new org.geotools.data.Query( schema.getName().getLocalPart() );
             featureQuery.setFilter( query.expression != null ? (Filter)query.expression : Filter.INCLUDE );
             // load all properties as we actually use the features via the #found buffer
             //featureQuery.setPropertyNames( new String[] {} );
             featureQuery.setStartIndex( query.firstResult );
             featureQuery.setMaxFeatures( query.maxResults );
 
-            final FeatureCollection features = fs.getFeatures( featureQuery );
-            final Iterator<Feature> it = features.iterator();
-            
-            return new AbstractCollection<String>() {
-                
-                private LazyInit<Integer> size = new PlainLazyInit(); 
+            return new AbstractCollection<CompositeStateReference>() {
+                private FeatureCollection   features = fs.getFeatures( featureQuery );
+                private LazyInit<Integer>   size = new PlainLazyInit( () -> features.size() ); 
 
-                public Iterator<String> iterator() {
-                    return Iterators.transform( it, new Function<Feature,String>() {
-                        public String apply( Feature input ) {
-                            String id = input.getIdentifier().getID();
-                            found.put( id, input );
-                            return id;
+                public Iterator<CompositeStateReference> iterator() {
+                    return new Iterator<CompositeStateReference>() {
+                        private FeatureIterator     it = features.features();
+
+                        @Override
+                        public boolean hasNext() {
+                            return it.hasNext();
                         }
-                    });
+                        @Override
+                        public CompositeStateReference next() {
+                            return new CompositeStateReference() {
+                                private Feature feature = it.next();
+                                @Override
+                                public Object id() {
+                                    return feature.getIdentifier().getID();
+                                }
+                                @Override
+                                public CompositeState get() {
+                                    return new FeatureCompositeState( feature, FeatureStoreUnitOfWork.this );
+                                }
+                            };
+                        }
+                        @Override
+                        protected void finalize() throws Throwable {
+                            it = Closer.create().closeAndNull( it );
+                        }
+                    };
                 }
-
+                @Override
                 public int size() {
-                    return size.get( new Supplier<Integer>() {
-                        public Integer get() {
-                            return features.size();
-                        }                    
-                    });
+                    return size.get();
                 }
-
+                @Override
                 public boolean isEmpty() {
                     return size() == 0;  //features.isEmpty();
-                }
-
-                protected void finalize() throws Throwable {
-                    if (it != null) { features.close( it ); }
                 }
             };
         }
@@ -331,7 +337,7 @@ public class FeatureStoreUnitOfWork
     protected void apply( Iterable<Entity> loaded ) throws IOException {  //, ConcurrentEntityModificationException {
         assert tx != null;
         // find created, modified, removed
-        Map<Class,FeatureCollection> created = new HashMap();
+        Map<Class,MemoryFeatureCollection> created = new HashMap();
         Map<Class,Set<FeatureId>> removed = new HashMap();
 
         for (Entity entity : loaded) {
@@ -344,7 +350,7 @@ public class FeatureStoreUnitOfWork
                 // just send twice to the store, one in create and the equal modification
                 feature.getUserData().remove( "__created__" );
                 
-                FeatureCollection coll = created.get( entity.getClass() );
+                MemoryFeatureCollection coll = created.get( entity.getClass() );
                 if (coll == null) {
                     coll = new MemoryFeatureCollection( null, null );
                     created.put( entity.getClass(), coll );
@@ -364,7 +370,7 @@ public class FeatureStoreUnitOfWork
         }
 
         // write created
-        for (Entry<Class,FeatureCollection> entry : created.entrySet()) {
+        for (Entry<Class,MemoryFeatureCollection> entry : created.entrySet()) {
             log.debug( "    Adding feature(s) of " + entry.getKey().getSimpleName() + " : " + entry.getValue().size() );
             FeatureStore fs = featureSource( entry.getKey() );
             if (tx != fs.getTransaction()) {

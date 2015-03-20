@@ -17,9 +17,14 @@ package org.polymap.model2.store.geotools;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.ComplexType;
+import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.feature.type.PropertyDescriptor;
 
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.ComplexType;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.Entity;
 
@@ -53,7 +58,11 @@ class SimpleFeatureTypeBuilder
                 attributes.add( (AttributeDescriptor)prop );
             }
         }
-        
+        // build fake geom descriptor
+        if (geom == null) {
+            geom = buildFakeGeom();
+        }
+
         return factory.createSimpleFeatureType( complexType.getName(), attributes,
                 geom, false, complexType.getRestrictions(),
                 complexType.getSuper(), complexType.getDescription() );

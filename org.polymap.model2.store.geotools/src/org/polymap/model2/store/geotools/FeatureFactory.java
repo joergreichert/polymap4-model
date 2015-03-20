@@ -14,7 +14,9 @@
  */
 package org.polymap.model2.store.geotools;
 
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
+import org.geotools.data.FeatureSource;
+import org.geotools.data.FeatureStore;
+import org.opengis.feature.Feature;
 
 /**
  * For mysterious (at least for me) reasons the {@link FeatureSource} interface does not

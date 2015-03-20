@@ -17,15 +17,25 @@ package org.polymap.model2.store.geotools.test;
 import java.util.HashMap;
 import java.util.Map;
 
-import java.awt.Point;
 import java.io.File;
 import java.io.Serializable;
 
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.shapefile.ShapefileDataStoreFactory;
+import org.geotools.referencing.CRS;
+import org.opengis.feature.Feature;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.FeatureType;
+import org.opengis.feature.type.GeometryDescriptor;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
+import com.vividsolutions.jts.geom.Point;
 
 import org.polymap.model2.runtime.EntityRepository;
+import org.polymap.model2.store.geotools.FeatureStoreAdapter;
 import org.polymap.model2.test.Employee;
 import org.polymap.model2.test.SimpleModelTest;
 
@@ -54,20 +64,24 @@ public class FeatureSimpleModelTest
         
         //File f = new File( "/home/falko/Data/WGN_SAX_INFO/Datenuebergabe_Behoerden_Stand_1001/Shapedateien/Chem_Zustand_Fliessgew_WK_Liste_CHEM_0912.shp" );
         File dir = new File( "/tmp/" + getClass().getSimpleName() );
-        dir.mkdir();
-        File f = new File( dir, "employee.shp" );
+        File f = new File( dir, "Employee.shp" );
         log.debug( "opening shapefile: " + f );
+
+        // createNewDataStore() does no longer delete dir
+        FileUtils.deleteDirectory( dir );
+        dir.mkdir();
+
         ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
 
         Map<String,Serializable> params = new HashMap<String, Serializable>();
         params.put( "url", f.toURI().toURL() );
         params.put( "create spatial index", Boolean.TRUE );
 
-        ds = (ShapefileDataStore) dataStoreFactory.createNewDataStore( params );
+        ds = (ShapefileDataStore)dataStoreFactory.createNewDataStore( params );
         store = new FeatureStoreAdapter( ds );
         repo = EntityRepository.newConfiguration()
-                .setStore( store )
-                .setEntities( new Class[] {Employee.class} )
+                .store.set( store )
+                .entities.set( new Class[] {Employee.class} )
                 .create();
         uow = repo.newUnitOfWork();
     }
@@ -91,9 +105,9 @@ public class FeatureSimpleModelTest
         
         GeometryDescriptor geom = schema.getGeometryDescriptor();
         assertNotNull( geom );
-        assertEquals( geom.getLocalName(), "geom" );
-        assertEquals( geom.getType().getBinding(), Point.class );
-        assertEquals( geom.getCoordinateReferenceSystem(), CRS.decode( "EPSG:31468" ) );
+        assertEquals( "geom", geom.getLocalName() );
+        assertEquals( Point.class, geom.getType().getBinding() );
+        assertEquals( CRS.decode( "EPSG:31468" ), geom.getCoordinateReferenceSystem() );
     }
     
 }
