@@ -159,6 +159,7 @@ public abstract class SimpleModelTest
         for (int i=0; i<11; i++) {
             Employee employee = uow.createEntity( Employee.class, null );
             employee.jap.set( i );
+            employee.as( TrackableMixin.class ).track.set( 100 );
         }
         // commit
         log.info( "### COMMIT ###" );

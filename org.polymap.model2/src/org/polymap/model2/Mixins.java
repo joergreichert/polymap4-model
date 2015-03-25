@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2012, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -21,7 +21,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 
+ * Specifies the mixins of an {@link Entity}. An Entity can be cast to one of its
+ * mixins via {@link Entity#as(Class)}.
+ * <p/>
+ * An Entity inherits the mixins of its super classes. Care must be taken if the same
+ * mixin is applied to different levels of the type hierarchie. It is a good idea to
+ * avoid this.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

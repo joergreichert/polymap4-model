@@ -102,7 +102,8 @@ public class FeatureStoreAdapter
                 }
             }
             // create schema
-            catch (IOException e) {
+            // fs.getSchema() throws RuntimeException for ShapefileDataSource
+            catch (Exception e) {
                 try {
                     log.info( "No feature store found: " + e.getLocalizedMessage() + ". Creating schema: " + entitySchema ); 
                     store.createSchema( entitySchema );

@@ -17,7 +17,6 @@ package org.polymap.model2.test;
 import java.util.Date;
 
 import org.polymap.model2.Defaults;
-import org.polymap.model2.Mixins;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.Nullable;
 import org.polymap.model2.Property;
@@ -29,7 +28,6 @@ import org.polymap.model2.runtime.CompositeInfo;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 @NameInStore("Employee")
-@Mixins( {TrackableMixin.class} )
 public class Employee
         extends Person {
     

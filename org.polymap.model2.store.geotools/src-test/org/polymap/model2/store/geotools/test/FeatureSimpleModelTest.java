@@ -107,7 +107,7 @@ public class FeatureSimpleModelTest
         assertNotNull( geom );
         assertEquals( "geom", geom.getLocalName() );
         assertEquals( Point.class, geom.getType().getBinding() );
-        assertEquals( CRS.decode( "EPSG:31468" ), geom.getCoordinateReferenceSystem() );
+        assertEquals( CRS.decode( "EPSG:4326" ), geom.getCoordinateReferenceSystem() );
     }
     
 }
