@@ -14,6 +14,7 @@
  */
 package org.polymap.model2;
 
+import org.polymap.model2.query.Expressions;
 import org.polymap.model2.runtime.CompositeInfo;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 
@@ -36,6 +37,11 @@ import org.polymap.model2.runtime.EntityRuntimeContext;
  * <b>Runtime information</b> about an instance of a Composite can be retrieved by
  * calling {@link #info()}.
  * <p/>
+ * A <b>template</b> instance of a concrete Composite is automatically
+ * <b>injected</b> into a static member with the name "TYPE". Sub-classes may expose
+ * such a static member in order to access information about properties without a
+ * conrete instance of this Composite. See also
+ * {@link Expressions#template(Class, org.polymap.model2.runtime.EntityRepository)}.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
