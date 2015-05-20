@@ -184,7 +184,7 @@ class FeatureCompositeState
                     isNull = isNull && ((Association)prop).getValue() == null;
                 }
                 else {
-                    throw new IllegalStateException( "Unhandled Property type: " + prop.getClass().getName() );
+                    throw new IllegalStateException( "Unhandled Property type: " + prop );
                 }
             }
             return !isNull ? new FeatureCompositeState( feature, propState, suow ) : null;

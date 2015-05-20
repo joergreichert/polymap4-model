@@ -92,28 +92,28 @@ public class FeatureStoreUnitOfWork
     private Transaction                 tx;
     
     /** Never evicting cache of used {@link FeatureSource} instances. */
-    private LoadingCache<Class<? extends Entity>,FeatureStore> featureSources;
+    private LoadingCache<Class<? extends Entity>,FeatureSource> featureSources;
     
     
     protected FeatureStoreUnitOfWork( StoreRuntimeContext context, FeatureStoreAdapter store ) {
         this.store = store;
 
         // XXX why use Guave cache here anyway?
-        this.featureSources = CacheBuilder.newBuilder().build( new CacheLoader<Class<?>,FeatureStore>() {
-            public FeatureStore load( Class<?> entityClass ) throws Exception {
+        this.featureSources = CacheBuilder.newBuilder().build( new CacheLoader<Class<?>,FeatureSource>() {
+            public FeatureSource load( Class<?> entityClass ) throws Exception {
                 // name in store
                 String typeName = entityClass.getAnnotation( NameInStore.class ) != null
                         ? entityClass.getAnnotation( NameInStore.class ).value()
                         : entityClass.getSimpleName();
                         
                 NameImpl name = new NameImpl( typeName );
-                return (FeatureStore)FeatureStoreUnitOfWork.this.store.getStore().getFeatureSource( name );
+                return FeatureStoreUnitOfWork.this.store.getStore().getFeatureSource( name );
             }
         });
     }
 
     
-    public FeatureStore featureSource( Class<? extends Entity> entityClass ) {
+    public FeatureSource featureSource( Class<? extends Entity> entityClass ) {
         try {
             // why use Guave cache here anyway?
             return featureSources.get( entityClass );
@@ -126,7 +126,7 @@ public class FeatureStoreUnitOfWork
 
     @Override
     public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass ) {
-        FeatureStore fs = featureSource( entityClass );
+        FeatureSource fs = featureSource( entityClass );
         FeatureIterator it = null;
         try {
             FeatureCollection features = fs.getFeatures(
@@ -154,7 +154,7 @@ public class FeatureStoreUnitOfWork
     @Override
     public <T extends Entity> CompositeState newEntityState( Object id, Class<T> entityClass ) {
         // find schema for entity
-        FeatureStore fs = featureSource( entityClass );
+        FeatureSource fs = featureSource( entityClass );
         FeatureType schema = fs.getSchema();
         
         // create feature
@@ -180,7 +180,7 @@ public class FeatureStoreUnitOfWork
         assert query.expression == null || query.expression instanceof Filter : "Wrong query expression type: " + query.expression;
         try {
             // schema
-            FeatureStore fs = featureSource( query.resultType() );
+            FeatureSource fs = featureSource( query.resultType() );
             FeatureType schema = fs.getSchema();
 
             // features
@@ -271,9 +271,9 @@ public class FeatureStoreUnitOfWork
             tx.close();
             tx = null;
 
-            for (FeatureStore fs : featureSources.asMap().values()) {
+            for (FeatureSource fs : featureSources.asMap().values()) {
 //                log.debug( "Checking features: " + fs );
-                fs.setTransaction( Transaction.AUTO_COMMIT );
+                ((FeatureStore)fs).setTransaction( Transaction.AUTO_COMMIT );
 //                fs.getFeatures().accepts( new FeatureVisitor() {
 //                    public void visit( Feature feature ) {
 //                        log.debug( "FeatureId: " + feature.getIdentifier() );
@@ -298,9 +298,9 @@ public class FeatureStoreUnitOfWork
                 tx.close();
                 tx = null;
 
-                for (FeatureStore fs : featureSources.asMap().values()) {
+                for (FeatureSource fs : featureSources.asMap().values()) {
                     //                log.debug( "Checking features: " + fs );
-                    fs.setTransaction( Transaction.AUTO_COMMIT );
+                    ((FeatureStore)fs).setTransaction( Transaction.AUTO_COMMIT );
                     //                fs.getFeatures().accepts( new FeatureVisitor() {
                     //                    public void visit( Feature feature ) {
                     //                        log.debug( "FeatureId: " + feature.getIdentifier() );
@@ -372,7 +372,7 @@ public class FeatureStoreUnitOfWork
         // write created
         for (Entry<Class,MemoryFeatureCollection> entry : created.entrySet()) {
             log.debug( "    Adding feature(s) of " + entry.getKey().getSimpleName() + " : " + entry.getValue().size() );
-            FeatureStore fs = featureSource( entry.getKey() );
+            FeatureStore fs = (FeatureStore)featureSource( entry.getKey() );
             if (tx != fs.getTransaction()) {
                 fs.setTransaction( tx );
             }
@@ -388,7 +388,7 @@ public class FeatureStoreUnitOfWork
         // write removed
         for (Entry<Class,Set<FeatureId>> entry : removed.entrySet()) {
             log.debug( "    Removing feature(s) of " + entry.getKey().getSimpleName() + " : " + entry.getValue().size() );
-            FeatureStore fs = featureSource( entry.getKey() );
+            FeatureStore fs = (FeatureStore)featureSource( entry.getKey() );
             if (tx != fs.getTransaction()) {
                 fs.setTransaction( tx );
             }

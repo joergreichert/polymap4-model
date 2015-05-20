@@ -78,11 +78,14 @@ public class FeatureSimpleModelTest
         params.put( "create spatial index", Boolean.TRUE );
 
         ds = (ShapefileDataStore)dataStoreFactory.createNewDataStore( params );
-        store = new FeatureStoreAdapter( ds );
+        store = new FeatureStoreAdapter( ds )
+                .createOrUpdateSchemas.put( true );
+        
         repo = EntityRepository.newConfiguration()
                 .store.set( store )
                 .entities.set( new Class[] {Employee.class} )
                 .create();
+        
         uow = repo.newUnitOfWork();
     }
 

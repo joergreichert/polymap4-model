@@ -27,6 +27,10 @@ import org.opengis.feature.type.FeatureType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.polymap.core.runtime.config.Config;
+import org.polymap.core.runtime.config.ConfigurationFactory;
+import org.polymap.core.runtime.config.Defaults;
+
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
@@ -50,11 +54,15 @@ public class FeatureStoreAdapter
     private StoreRuntimeContext         context;
     
     private DataAccess                  store;
+    
+    @Defaults
+    public Config<FeatureStoreAdapter,Boolean>  createOrUpdateSchemas;
 
 
     public FeatureStoreAdapter( DataAccess store ) {
         assert store != null;
         this.store = store;
+        ConfigurationFactory.inject( this );
     }
 
 
@@ -63,53 +71,55 @@ public class FeatureStoreAdapter
         EntityRepository repo = context.getRepository();
     
         // check/create/update schemas
-//        FeatureStoreUnitOfWork uow = (FeatureStoreUnitOfWork)createUnitOfWork();
-        for (Class<? extends Entity> entityClass : repo.getConfig().entities.get()) {
-            
-            // is entityClass complex?
-            boolean isComplex = false;
-            Class superClass = entityClass; 
-            for (;superClass != null; superClass = superClass.getSuperclass()) {
-                for (Field field : superClass.getDeclaredFields()) {
-                    if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
-                        isComplex = true; 
-                        break;
-                    }
-                    if (Property.class.isAssignableFrom( field.getType() )) {
-                        Class binding = (Class)((ParameterizedType)field.getGenericType()).getActualTypeArguments()[0];
-                        if (Composite.class.isAssignableFrom( binding )) {
+        if (createOrUpdateSchemas.get()) {
+            //        FeatureStoreUnitOfWork uow = (FeatureStoreUnitOfWork)createUnitOfWork();
+            for (Class<? extends Entity> entityClass : repo.getConfig().entities.get()) {
+
+                // is entityClass complex?
+                boolean isComplex = false;
+                Class superClass = entityClass; 
+                for (;superClass != null; superClass = superClass.getSuperclass()) {
+                    for (Field field : superClass.getDeclaredFields()) {
+                        if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
                             isComplex = true; 
                             break;
                         }
+                        if (Property.class.isAssignableFrom( field.getType() )) {
+                            Class binding = (Class)((ParameterizedType)field.getGenericType()).getActualTypeArguments()[0];
+                            if (Composite.class.isAssignableFrom( binding )) {
+                                isComplex = true; 
+                                break;
+                            }
+                        }
                     }
                 }
-            }
 
-            // check/update schema            
-            FeatureType entitySchema = isComplex ? featureType( entityClass ) : simpleFeatureType( entityClass );
-            try {
-                log.info( "Checking FeatureSource: " + entitySchema.getName().getLocalPart() + " ..." ); 
-                FeatureSource fs = store.getFeatureSource( entitySchema.getName() );
-                // update
-                if (fs != null && !entitySchema.equals( fs.getSchema() )) {
-                    try {
-                        log.warn( "FeatureType has been changed: " + entitySchema.getName() + " !!!" );
-                        store.updateSchema( entitySchema.getName(), entitySchema );
-                    }
-                    catch (UnsupportedOperationException e) {
-                        log.warn( "", e );
-                    }
-                }
-            }
-            // create schema
-            // fs.getSchema() throws RuntimeException for ShapefileDataSource
-            catch (Exception e) {
+                // check/update schema            
+                FeatureType entitySchema = isComplex ? featureType( entityClass ) : simpleFeatureType( entityClass );
                 try {
-                    log.info( "No feature store found: " + e.getLocalizedMessage() + ". Creating schema: " + entitySchema ); 
-                    store.createSchema( entitySchema );
+                    log.info( "Checking FeatureSource: " + entitySchema.getName().getLocalPart() + " ..." ); 
+                    FeatureSource fs = store.getFeatureSource( entitySchema.getName() );
+                    // update
+                    if (fs != null && !entitySchema.equals( fs.getSchema() )) {
+                        try {
+                            log.warn( "FeatureType has been changed: " + entitySchema.getName() + " !!!" );
+                            store.updateSchema( entitySchema.getName(), entitySchema );
+                        }
+                        catch (UnsupportedOperationException e) {
+                            log.warn( "", e );
+                        }
+                    }
                 }
-                catch (IOException e1) {
-                    throw new ModelRuntimeException( e1 );
+                // create schema
+                // fs.getSchema() throws RuntimeException for ShapefileDataSource
+                catch (Exception e) {
+                    try {
+                        log.info( "No feature store found: " + e.getLocalizedMessage() + ". Creating schema: " + entitySchema ); 
+                        store.createSchema( entitySchema );
+                    }
+                    catch (IOException e1) {
+                        throw new ModelRuntimeException( e1 );
+                    }
                 }
             }
         }
