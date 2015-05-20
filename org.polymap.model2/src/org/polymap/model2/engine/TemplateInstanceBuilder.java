@@ -32,9 +32,13 @@ import org.polymap.model2.Property;
 import org.polymap.model2.PropertyBase;
 import org.polymap.model2.runtime.CompositeInfo;
 import org.polymap.model2.runtime.EntityRepository;
+import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.PropertyInfo;
+import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
+import org.polymap.model2.store.CompositeState;
+import org.polymap.model2.store.StoreUnitOfWork;
 
 /**
  * 
@@ -46,6 +50,8 @@ public final class TemplateInstanceBuilder {
     private static Log log = LogFactory.getLog( TemplateInstanceBuilder.class );
 
     private EntityRepository        repo;
+
+    private CompositeInfo           compositeInfo;
     
     
     public TemplateInstanceBuilder( EntityRepository repo ) {
@@ -55,9 +61,22 @@ public final class TemplateInstanceBuilder {
 
     public <T extends Composite> T newComposite( Class<T> entityClass ) { 
         try {
+            // composite info
+            compositeInfo = repo.infoOf( entityClass );
+            if (compositeInfo == null) {
+                log.info( "Mixin type not declared on Entity type: " + entityClass.getName() );
+                compositeInfo = new CompositeInfoImpl( entityClass );
+            }
+            assert compositeInfo != null : "No info for Composite type: " + entityClass.getName();
+
+            // create instance
             Constructor<?> ctor = entityClass.getConstructor( new Class[] {} );
             T instance = (T)ctor.newInstance( new Object[] {} );
             
+            // set context
+            InstanceBuilder.contextField.set( instance, new TemplateEntityRuntimeContext() );
+            
+            // properties
             initProperties( instance );
             
             return instance;
@@ -77,14 +96,6 @@ public final class TemplateInstanceBuilder {
      * {@link TemplateInstanceBuilder} when the value is accessed.
      */
     protected void initProperties( Composite instance ) throws Exception {
-//        StoreSPI store = context.getRepository().getStore();
-        CompositeInfo compositeInfo = repo.infoOf( instance.getClass() );
-        if (compositeInfo == null) {
-            log.info( "Mixin type not declared on Entity type: " + instance.getClass().getName() );
-            compositeInfo = new CompositeInfoImpl( instance.getClass() );
-        }
-        assert compositeInfo != null : "No info for Composite type: " + instance.getClass().getName();
-        
         Class superClass = instance.getClass();
         while (superClass != null) {
             // XXX cache fields
@@ -297,4 +308,63 @@ public final class TemplateInstanceBuilder {
         }        
     }
 
+    
+    /**
+     * 
+     */
+    protected class TemplateEntityRuntimeContext
+            implements EntityRuntimeContext {
+
+        @Override
+        public CompositeInfo getInfo() {
+            return compositeInfo;
+        }
+
+        @Override
+        public <T extends Composite> T getCompositePart( Class<T> type ) {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public CompositeState getState() {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public EntityStatus getStatus() {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public void raiseStatus( EntityStatus newStatus ) {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public void resetStatus( EntityStatus loaded ) {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public UnitOfWork getUnitOfWork() {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public StoreUnitOfWork getStoreUnitOfWork() {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public EntityRepository getRepository() {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public void methodProlog( String methodName, Object[] args ) {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+        
+    }
+    
 }

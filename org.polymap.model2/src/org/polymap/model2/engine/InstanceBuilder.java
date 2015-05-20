@@ -151,6 +151,11 @@ public final class InstanceBuilder {
             for (Field field : superClass.getDeclaredFields()) {
                 if (PropertyBase.class.isAssignableFrom( field.getType() )) {
                     field.setAccessible( true );
+                    
+                    if (field.get( instance ) != null) {
+                        log.info( "Property already inistialized, skipping: " + field.getName() );
+                        continue;
+                    }
 
                     PropertyInfo info = compositeInfo.getProperty( field.getName() );
                     PropertyBase prop = null;
