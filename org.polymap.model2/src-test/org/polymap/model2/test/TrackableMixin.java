@@ -46,7 +46,7 @@ public class TrackableMixin
 
         @Override
         public String get() {
-            return "This is the computed property: " + getInfo().getName();
+            return "This is the computed property: " + info().getName();
         }
 
         @Override

@@ -54,7 +54,7 @@ public class PropertyChangeSupport
     public void set( Object value ) {
         ((Property)delegate).set( value );
         
-        PropertyInfo info = delegate.getInfo();
+        PropertyInfo info = delegate.info();
         Entity entity = context.getCompositePart( Entity.class );
         PropertyChangeEvent event = new PropertyChangeEvent( entity, info.getName(), null, value );
         EventManager.instance().publish( event );

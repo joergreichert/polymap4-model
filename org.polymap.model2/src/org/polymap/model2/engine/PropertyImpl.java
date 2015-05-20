@@ -68,14 +68,14 @@ class PropertyImpl<T>
     }
 
     @Override
-    public PropertyInfo getInfo() {
-        return storeProp.getInfo();
+    public PropertyInfo info() {
+        return storeProp.info();
     }
 
     @Override
     public String toString() {
         T value = get();
-        return "Property[name:" + getInfo().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
+        return "Property[name:" + info().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
     }
     
 }

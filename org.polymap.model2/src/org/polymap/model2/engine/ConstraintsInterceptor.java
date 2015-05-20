@@ -52,19 +52,19 @@ abstract class ConstraintsInterceptor<T>
     public ConstraintsInterceptor( PropertyBase<T> delegate, EntityRuntimeContextImpl context ) {
         this.delegate = delegate;
         this.context = context;
-        PropertyInfo info = delegate.getInfo();
+        PropertyInfo info = delegate.info();
         this.isImmutable = info.isImmutable();
         this.isNullable = info.isNullable();
     }
 
     
     protected String fullPropName() {
-        return context.getInfo().getName() + "." + getInfo().getName();
+        return context.getInfo().getName() + "." + info().getName();
     }
 
 
-    public PropertyInfo getInfo() {
-        return delegate.getInfo();
+    public PropertyInfo info() {
+        return delegate.info();
     }
 
 }

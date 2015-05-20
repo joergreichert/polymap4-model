@@ -34,7 +34,7 @@ public class ManyAssociationQuantifier<T extends Entity>
     
     @Override
     public boolean evaluate( Composite target ) {
-        String propName = prop.getInfo().getName();
+        String propName = prop.info().getName();
         PropertyInfo propInfo = target.info().getProperty( propName );
         ManyAssociation<T> targetProp = (ManyAssociation<T>)propInfo.get( target );
 

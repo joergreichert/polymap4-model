@@ -37,8 +37,8 @@ public abstract class PropertyConcernBase<T>
 
     
     @Override
-    public PropertyInfo getInfo() {
-        return delegate.getInfo();
+    public PropertyInfo info() {
+        return delegate.info();
     }    
     
 }

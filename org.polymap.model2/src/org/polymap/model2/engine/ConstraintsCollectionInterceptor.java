@@ -42,7 +42,7 @@ final class ConstraintsCollectionInterceptor<T>
     @Override
     public boolean equals( Object o ) {
         if (o instanceof CollectionProperty) {
-            return getInfo() == ((CollectionProperty)o).getInfo();
+            return info() == ((CollectionProperty)o).info();
         }
         else if (o instanceof Collection) {
             return ((Collection)o).containsAll( coll() );

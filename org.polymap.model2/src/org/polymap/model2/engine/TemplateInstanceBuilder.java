@@ -157,7 +157,7 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public PropertyInfo getInfo() {
+        public PropertyInfo info() {
             return info;
         }
 
@@ -224,7 +224,7 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public PropertyInfo getInfo() {
+        public PropertyInfo info() {
             return info;
         }
 
@@ -260,7 +260,7 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public PropertyInfo getInfo() {
+        public PropertyInfo info() {
             return info;
         }
 

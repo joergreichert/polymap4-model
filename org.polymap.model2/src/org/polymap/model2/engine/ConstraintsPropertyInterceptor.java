@@ -46,7 +46,7 @@ final class ConstraintsPropertyInterceptor<T>
         if (value == null) {
             if (defaultValue == UNINITIALIZED) {
                 // not synchronized; concurrent inits are ok here 
-                defaultValue = delegate.getInfo().getDefaultValue();
+                defaultValue = delegate.info().getDefaultValue();
             }
             value = (T)defaultValue;
         }

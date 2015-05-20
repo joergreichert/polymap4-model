@@ -40,5 +40,5 @@ public interface StoreProperty<T> {
      */
     public T createValue();
 
-    public PropertyInfo getInfo();
+    public PropertyInfo info();
 }

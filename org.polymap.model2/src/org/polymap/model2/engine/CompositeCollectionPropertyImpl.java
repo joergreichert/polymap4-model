@@ -56,7 +56,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
     public T createElement( ValueInitializer<T> initializer ) {
         CompositeState state = (CompositeState)storeProp.createValue();
         InstanceBuilder builder = new InstanceBuilder( entityContext );
-        Composite value = builder.newComposite( state, getInfo().getType() );
+        Composite value = builder.newComposite( state, info().getType() );
         
         if (initializer != null) {
             try {
@@ -123,7 +123,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 public T next() {
                     CompositeState state = (CompositeState)storeIt.next();
                     InstanceBuilder builder = new InstanceBuilder( entityContext );
-                    T result = (T)builder.newComposite( state, getInfo().getType() );
+                    T result = (T)builder.newComposite( state, info().getType() );
                     cache.add( result );
                     return result;
                 }

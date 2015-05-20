@@ -61,7 +61,7 @@ class CompositePropertyImpl<T extends Composite>
             CompositeState state = storeProp.get();
             if (state != null) {
                 InstanceBuilder builder = new InstanceBuilder( entityContext );
-                value = builder.newComposite( state, getInfo().getType() );
+                value = builder.newComposite( state, info().getType() );
             }
             else {
                 value = NULL_VALUE;
@@ -86,7 +86,7 @@ class CompositePropertyImpl<T extends Composite>
                 CompositeState state = storeProp.createValue();
                 assert state != null : "Store must not return null as newValue().";
                 InstanceBuilder builder = new InstanceBuilder( entityContext );
-                result = (T)builder.newComposite( state, getInfo().getType() );
+                result = (T)builder.newComposite( state, info().getType() );
 
                 if (initializer != null) {
                     try {
@@ -107,14 +107,14 @@ class CompositePropertyImpl<T extends Composite>
 
 
     @Override
-    public PropertyInfo getInfo() {
-        return storeProp.getInfo();
+    public PropertyInfo info() {
+        return storeProp.info();
     }
     
 
     @Override
     public String toString() {
-        return "Property[name:" + getInfo().getName() + ",value=" + get() + "]";
+        return "Property[name:" + info().getName() + ",value=" + get() + "]";
     }
 
 }

@@ -48,7 +48,7 @@ public abstract class BooleanExpression {
     protected <P extends PropertyBase<T>,T> P targetProp( Composite target, TemplateProperty<T> prop ) {
         assert target != null;
         assert prop != null;
-        String propName = prop.getInfo().getName();
+        String propName = prop.info().getName();
         PropertyInfo propInfo = target.info().getProperty( propName );
         return (P)propInfo.get( target );
     }
@@ -56,7 +56,7 @@ public abstract class BooleanExpression {
     protected <T> T propValue( Composite target, TemplateProperty<T> prop ) {
         assert target != null;
         assert prop != null;
-        String propName = prop.getInfo().getName();
+        String propName = prop.info().getName();
         PropertyInfo propInfo = target.info().getProperty( propName );
         Property<T> targetProp = (Property<T>)propInfo.get( target );
         return targetProp.get();

@@ -85,7 +85,7 @@ class LuceneQuantifierHandler
         
         // association
         if (quantifier instanceof TheAssociationQuantifier) {
-            Class<? extends Entity> assocEntityType = quantifier.prop.getInfo().getType();
+            Class<? extends Entity> assocEntityType = quantifier.prop.info().getType();
             Object[] assocIds = subQuery( assocEntityType, quantifier.subExp() );
             
             FieldnameBuilder fieldname = prefixedFieldname( quantifier.prop );
@@ -97,7 +97,7 @@ class LuceneQuantifierHandler
         if (quantifier instanceof ManyAssociationQuantifier) {
             assert quantifier.type == Quantifier.Type.ANY;
             
-            Class<? extends Entity> assocEntityType = quantifier.prop.getInfo().getType();
+            Class<? extends Entity> assocEntityType = quantifier.prop.info().getType();
             Object[] assocIds = subQuery( assocEntityType, quantifier.subExp() );
             
             FieldnameBuilder fieldname = prefixedFieldname( quantifier.prop );

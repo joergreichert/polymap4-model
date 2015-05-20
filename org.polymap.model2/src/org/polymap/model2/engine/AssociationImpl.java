@@ -51,14 +51,14 @@ class AssociationImpl<T extends Entity>
 
     @Override
     public String toString() {
-        return "Association[name:" + getInfo().getName() + ",id=" + storeProp.get().toString() + "]";
+        return "Association[name:" + info().getName() + ",id=" + storeProp.get().toString() + "]";
     }
     
     
     @Override
     public T get() {
         Object id = storeProp.get();
-        return id != null ? (T)context.getUnitOfWork().entity( getInfo().getType(), id ) : null;
+        return id != null ? (T)context.getUnitOfWork().entity( info().getType(), id ) : null;
     }
 
     
@@ -69,8 +69,8 @@ class AssociationImpl<T extends Entity>
 
 
     @Override
-    public PropertyInfo getInfo() {
-        return storeProp.getInfo();
+    public PropertyInfo info() {
+        return storeProp.info();
     }
     
 }

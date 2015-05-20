@@ -50,7 +50,7 @@ class LuceneAssociationHandler
             //assert predicate.ids.length == 1 : "Ids != 1 for Association: " + expression.assoc.getInfo().getName() + ", ids:" + ArrayUtils.toString( predicate.ids );
             
             if (predicate.ids.length == 0) {
-                throw new ModelRuntimeException( "Ids == 0 for Association: " + expression.assoc.getInfo().getName() );                
+                throw new ModelRuntimeException( "Ids == 0 for Association: " + expression.assoc.info().getName() );                
             }
             else if (predicate.ids.length == 1) {
                 Object id = predicate.ids[0];

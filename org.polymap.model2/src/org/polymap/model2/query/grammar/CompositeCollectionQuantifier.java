@@ -33,7 +33,7 @@ public class CompositeCollectionQuantifier<T extends Composite>
     
     @Override
     public boolean evaluate( Composite target ) {
-        String propName = prop.getInfo().getName();
+        String propName = prop.info().getName();
         PropertyInfo propInfo = target.info().getProperty( propName );
         CollectionProperty<T> targetProp = (CollectionProperty<T>)propInfo.get( target );
 

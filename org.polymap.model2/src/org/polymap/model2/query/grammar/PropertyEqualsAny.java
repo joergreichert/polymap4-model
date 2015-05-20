@@ -38,7 +38,7 @@ public class PropertyEqualsAny<T>
 
     @Override
     public boolean evaluate( Composite target ) {
-        String propName = prop.getInfo().getName();
+        String propName = prop.info().getName();
         Object propValue = ((Property)target.info().getProperty( propName ).get( target )).get();
         
         for (T v : values) {

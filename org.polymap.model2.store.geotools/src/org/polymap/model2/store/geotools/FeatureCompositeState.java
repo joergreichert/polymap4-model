@@ -144,11 +144,11 @@ class FeatureCompositeState
         
         @Override
         public Object createValue() {
-            return getInfo().getDefaultValue();
+            return info().getDefaultValue();
         }
 
         @Override
-        public PropertyInfo getInfo() {
+        public PropertyInfo info() {
             return info;
         }
     }
@@ -249,7 +249,7 @@ class FeatureCompositeState
 
                 @Override
                 public Object next() {
-                    if (Composite.class.isAssignableFrom( getInfo().getType() )) {
+                    if (Composite.class.isAssignableFrom( info().getType() )) {
                         return new FeatureCompositeState( feature, (ComplexAttribute)it.next(), suow );
                     }
                     else {

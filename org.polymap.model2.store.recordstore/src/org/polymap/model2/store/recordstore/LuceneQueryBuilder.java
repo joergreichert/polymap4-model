@@ -179,7 +179,7 @@ class LuceneQueryBuilder {
      *
      */
     protected static String simpleFieldname( TemplateProperty property ) {
-        return property.getInfo().getNameInStore();
+        return property.info().getNameInStore();
     }
 
 }

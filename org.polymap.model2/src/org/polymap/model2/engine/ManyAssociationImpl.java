@@ -53,8 +53,8 @@ class ManyAssociationImpl<T extends Entity>
 //    }
 
     @Override
-    public PropertyInfo getInfo() {
-        return storeProp.getInfo();
+    public PropertyInfo info() {
+        return storeProp.info();
     }
 
     // Collection *****************************************
@@ -70,7 +70,7 @@ class ManyAssociationImpl<T extends Entity>
 
             UnitOfWork              uow = context.getUnitOfWork();
             
-            Class<? extends Entity> entityType = getInfo().getType();
+            Class<? extends Entity> entityType = info().getType();
             
             @Override
             public T apply( Object id ) {
@@ -86,7 +86,7 @@ class ManyAssociationImpl<T extends Entity>
 
     @Override
     public String toString() {
-        return "ManyAssociation[name:" + getInfo().getName() + ",value=" + super.toString() + "]";
+        return "ManyAssociation[name:" + info().getName() + ",value=" + super.toString() + "]";
     }
 
 }

@@ -42,14 +42,14 @@ public abstract class ComputedProperty<T>
     }
 
     @Override
-    public PropertyInfo getInfo() {
+    public PropertyInfo info() {
         return info;
     }
 
     @Override
     public String toString() {
         T value = get();
-        return "ComputedProperty[name:" + getInfo().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
+        return "ComputedProperty[name:" + info().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
     }
 
 }

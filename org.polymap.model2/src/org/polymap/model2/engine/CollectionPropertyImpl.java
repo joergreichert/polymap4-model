@@ -48,8 +48,8 @@ class CollectionPropertyImpl<T>
     }
 
     @Override
-    public PropertyInfo getInfo() {
-        return storeProp.getInfo();
+    public PropertyInfo info() {
+        return storeProp.info();
     }
 
     // Collection *****************************************
@@ -71,7 +71,7 @@ class CollectionPropertyImpl<T>
 
     @Override
     public String toString() {
-        return "Property[name:" + getInfo().getName() + ",value=" + super.toString() + "]";
+        return "Property[name:" + info().getName() + ",value=" + super.toString() + "]";
     }
 
 }

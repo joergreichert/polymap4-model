@@ -58,7 +58,8 @@ public abstract class Composite {
      * 
      */
     public CompositeInfo info() {
-        return context.getRepository().infoOf( getClass() );
+        //return context.getRepository().infoOf( getClass() );
+        return context.getInfo();
     }
 
     public String toString() {

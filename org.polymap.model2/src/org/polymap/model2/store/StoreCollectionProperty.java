@@ -47,6 +47,6 @@ public interface StoreCollectionProperty<T>
      */
     public T createValue();
 
-    public PropertyInfo getInfo();
+    public PropertyInfo info();
 
 }

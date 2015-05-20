@@ -152,10 +152,10 @@ class RecordCompositeState
         }
 
         public Object createValue() {
-            return getInfo().getDefaultValue();
+            return info().getDefaultValue();
         }
 
-        public PropertyInfo getInfo() {
+        public PropertyInfo info() {
             return info;
         }
         
@@ -313,7 +313,7 @@ class RecordCompositeState
 
                 @Override
                 public Object next() {
-                    assert Composite.class.isAssignableFrom( getInfo().getType() );
+                    assert Composite.class.isAssignableFrom( info().getType() );
                     return new RecordCompositeState( state, fieldname.arrayElement( index++ ) );
                 }
 
