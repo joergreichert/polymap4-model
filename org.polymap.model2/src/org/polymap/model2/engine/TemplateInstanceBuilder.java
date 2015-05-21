@@ -85,7 +85,7 @@ public final class TemplateInstanceBuilder {
             throw e;
         }
         catch (Exception e) {
-            throw new ModelRuntimeException( e );
+            throw new ModelRuntimeException( "Error while instantiation of: " + entityClass, e );
         }
     }
     

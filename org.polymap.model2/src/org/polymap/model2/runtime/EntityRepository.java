@@ -52,6 +52,9 @@ public abstract class EntityRepository
         return ConfigurationFactory.create( Configuration.class );
     }
     
+    /**
+     * 
+     */
     public static class Configuration {
 
         @Mandatory
@@ -67,9 +70,17 @@ public abstract class EntityRepository
          */
         public Property<Configuration,CacheManager> cacheManager;
         
+        /**
+         * @deprecated Not supported yet.
+         */
+        public Property<Configuration,NameInStoreMapper> nameInStoreMapper;
+        
         public EntityRepository create() {
             if (cacheManager.get() == null) {
                 cacheManager.set( new SimpleCacheManager() );
+            }
+            if (nameInStoreMapper.get() == null) {
+                nameInStoreMapper.set( new DefaultNameInStoreMapper() );
             }
             return new EntityRepositoryImpl( this );
         }

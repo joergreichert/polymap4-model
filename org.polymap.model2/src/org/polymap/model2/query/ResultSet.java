@@ -16,6 +16,8 @@ package org.polymap.model2.query;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.polymap.model2.Entity;
 
@@ -47,5 +49,13 @@ public interface ResultSet<T extends Entity>
 
     @Override
     public void close();
+    
+    /**
+     * 
+     */
+    default public Stream<T> stream() {
+        // XXX is this good? fast? intented to be used this way?
+        return StreamSupport.stream( spliterator(), false );
+    }
     
 }

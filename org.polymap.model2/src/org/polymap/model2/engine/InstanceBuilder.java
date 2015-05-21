@@ -126,7 +126,7 @@ public final class InstanceBuilder {
             throw e;
         }
         catch (Exception e) {
-            throw new ModelRuntimeException( e );
+            throw new ModelRuntimeException( "Error while creating an instance of: " + entityClass, e );
         }
     }
     
