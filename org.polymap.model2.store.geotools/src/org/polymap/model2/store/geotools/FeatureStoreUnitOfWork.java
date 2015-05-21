@@ -185,7 +185,9 @@ public class FeatureStoreUnitOfWork
 
             // features
             org.geotools.data.Query featureQuery = new org.geotools.data.Query( schema.getName().getLocalPart() );
-            featureQuery.setFilter( query.expression != null ? (Filter)query.expression : Filter.INCLUDE );
+            featureQuery.setFilter( query.expression != null 
+                    ? ((FilterWrapper)query.expression).filter 
+                    : Filter.INCLUDE );
             // load all properties as we actually use the features via the #found buffer
             //featureQuery.setPropertyNames( new String[] {} );
             featureQuery.setStartIndex( query.firstResult );
