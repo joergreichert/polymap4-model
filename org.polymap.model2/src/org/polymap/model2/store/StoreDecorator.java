@@ -14,8 +14,6 @@
  */
 package org.polymap.model2.store;
 
-import java.util.Collection;
-
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
 import org.polymap.model2.Entity;
@@ -90,7 +88,7 @@ public abstract class StoreDecorator
             return suow.newEntityState( id, entityClass );
         }
 
-        public Collection<CompositeStateReference> executeQuery( Query query ) {
+        public StoreResultSet executeQuery( Query query ) {
             return suow.executeQuery( query );
         }
 

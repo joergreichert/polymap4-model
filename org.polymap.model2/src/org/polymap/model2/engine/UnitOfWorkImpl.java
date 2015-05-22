@@ -20,6 +20,7 @@ import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIF
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,13 +43,14 @@ import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
+import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
-import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.CompositeStateReference;
+import org.polymap.model2.store.StoreResultSet;
 import org.polymap.model2.store.StoreUnitOfWork;
 
 /**
@@ -154,21 +156,24 @@ public class UnitOfWorkImpl
 
     @Override
     public <T extends Entity> T entity( final Class<T> entityClass, final Object id ) {
-        return entity( entityClass, id, null );
+        return entity( entityClass, id, Optional.empty() );
     }
 
 
-    protected <T extends Entity> T entity( final Class<T> entityClass, final Object id, 
-            final Supplier<CompositeState> preloaded ) {
+    protected <T extends Entity> T entity( 
+            final Class<T> entityClass, 
+            final Object id, 
+            final Optional<Supplier<CompositeState>> preloaded ) {
+        
         assert entityClass != null;
         assert id != null;
         checkOpen();
         T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
-                CompositeState supplied = preloaded != null ? preloaded.get() : null;
-                CompositeState state = supplied != null
-                        ? supplied
-                        : storeUow.loadEntityState( id, entityClass );
+                CompositeState state = preloaded
+                        .map( supplier -> supplier.get() )
+                        .orElse( storeUow.loadEntityState( id, entityClass ) );
+                
                 return state != null ? repo.buildEntity( state, entityClass, UnitOfWorkImpl.this ) : null;
             }
         });
@@ -227,28 +232,42 @@ public class UnitOfWorkImpl
                 // are cached for subsequent calls to iterator(); however, creating and filtering
                 // entities is done on-the-fly to avoid loading all Entities in memory at same time
 
-                // XXX without this copy the collection is empty on second access;
-                // iterate instead of addAll() to avoid call of size()
-                final Collection<CompositeStateReference> refs = new ArrayList( 1024 );
-                for (CompositeStateReference ref : storeUow.executeQuery( this ) ) {
-                    refs.add( ref );
+                // the preloaded entity from the CompositeStateReference is used to build the
+                // entity; but we are not keeping a strong ref to it in order to allow the cache to
+                // evict the entity state; 
+                
+                // we are either not keeping a strong ref to the CompositeStateReferences as they
+                // may contain refs to the states which would kept in memory for the lifetime of
+                // the ResultSet otherwise
+                
+                // XXX do this on-the-fly on first run to allow for big ResultSets that are not fitting
+                // into memory and avoid the double call of entity()
+                final Collection<Object> ids = new ArrayList( 1024 );
+                try ( StoreResultSet rs = storeUow.executeQuery( this ) ) {
+                    while (rs.hasNext()) {
+                        CompositeStateReference ref = rs.next();
+                        T entity = entity( entityClass, ref.id(), Optional.of( ref ) );
+                        ids.add( entity.id() );
+                    }
                 }
                 
+                // 
                 return new ResultSet<T>() {
-                    
+
                     /** The cached size; not synchronized */
-                    private int size = -1;
+                    private int             size = -1;
 
                     @Override
                     public Iterator<T> iterator() {
                         // unmodified
-                        Stream<T> foundUnmodified = refs.stream()
-                                .map( ref -> entity( entityClass, ref.id(), ref ) )
+                        Stream<T> foundUnmodified = ids.stream()
+                                .map( id -> entity( entityClass, id, Optional.empty() ) )
                                 .filter( entity -> {
                                     EntityStatus status = entity.status();
                                     assert status != EntityStatus.CREATED; 
                                     return status == EntityStatus.LOADED;                            
                                 });
+                        
                         // modified
                         // XXX not cached, done for every call to iterator()
                         Stream<T> foundModified = (Stream<T>)modified.values().stream()
@@ -273,12 +292,13 @@ public class UnitOfWorkImpl
                     public int size() {
                         if (size == -1) {
                             // avoid iterating if no modifications
-                            size = modified.isEmpty() ? refs.size() : Iterators.size( iterator() );
+                            size = modified.isEmpty() ? ids.size() : Iterators.size( iterator() );
                         }
                         return size;
                     }
                     @Override
                     public void close() {
+                        // already closed
                     }
                 };
             }

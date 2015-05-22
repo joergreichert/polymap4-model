@@ -40,8 +40,10 @@ public abstract class Query<T extends Entity> {
 
 
     /**
-     * Executes the query with its current settings. The resulting {@link ResultSet}
-     * might or might not reflect modifications done after executing the Query.
+     * Executes the query with its current settings. The contents of the resulting
+     * {@link ResultSet} is stable against modifications of the underlying store but
+     * it reflects modifications that are possibly done after executing inside the
+     * same {@link UnitOfWork}.
      * 
      * @see UnitOfWork#query(Class)
      * @return Newly created {@link ResultSet}.

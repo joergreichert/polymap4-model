@@ -14,8 +14,6 @@
  */
 package org.polymap.model2.store;
 
-import java.util.Collection;
-
 import org.polymap.model2.Entity;
 import org.polymap.model2.engine.UnitOfWorkImpl;
 import org.polymap.model2.query.Query;
@@ -51,11 +49,8 @@ public interface StoreUnitOfWork {
 
     /**
      * 
-     *
-     * @param entityClass
-     * @return Collection of ids of the found entities.
      */
-    public Collection<CompositeStateReference> executeQuery( Query query );
+    public StoreResultSet executeQuery( Query query );
     
     /**
      * Evaluate the given store specific expression against the given Composite

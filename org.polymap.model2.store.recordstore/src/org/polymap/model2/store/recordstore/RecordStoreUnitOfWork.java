@@ -16,8 +16,6 @@ package org.polymap.model2.store.recordstore;
 
 import static org.polymap.model2.store.recordstore.RecordCompositeState.TYPE_KEY;
 
-import java.util.AbstractCollection;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,6 +33,7 @@ import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.CompositeStateReference;
+import org.polymap.model2.store.StoreResultSet;
 import org.polymap.model2.store.StoreRuntimeContext;
 import org.polymap.model2.store.StoreUnitOfWork;
 import org.polymap.recordstore.IRecordState;
@@ -127,7 +126,7 @@ public class RecordStoreUnitOfWork
 
 
     @Override
-    public Collection<CompositeStateReference> executeQuery( Query query ) {
+    public StoreResultSet executeQuery( Query query ) {
         try {
             RecordQuery recordQuery = null;
             if (query.expression == null) {
@@ -136,7 +135,7 @@ public class RecordStoreUnitOfWork
             else if (query.expression instanceof BooleanExpression) {
                 // FIXME
                 recordQuery = new LuceneQueryBuilder( (LuceneRecordStore)store )
-                        .createQuery( query.resultType, (BooleanExpression)query.expression );
+                        .createQuery( query.resultType, query.expression );
             }
             else {
                 throw new UnsupportedOperationException( "Query expression type is not supported: " 
@@ -147,10 +146,17 @@ public class RecordStoreUnitOfWork
             recordQuery.setMaxResults( query.maxResults );
             final ResultSet results = store.find( recordQuery );
             
-            return new AbstractCollection<CompositeStateReference>() {
+            return new StoreResultSet() {
+                Iterator<IRecordState> it = results.iterator();
+                
                 @Override
-                public Iterator iterator() {
-                    return results.stream().map( state -> new CompositeStateReference() {
+                public boolean hasNext() {
+                    return it.hasNext();
+                }
+                @Override
+                public CompositeStateReference next() {
+                    IRecordState state = it.next();
+                    return new CompositeStateReference() {
                         @Override
                         public Object id() {
                             return state.id();
@@ -159,15 +165,15 @@ public class RecordStoreUnitOfWork
                         public CompositeState get() {
                             return new RecordCompositeState( state );
                         }
-                    }).iterator();
+                    };
                 }
                 @Override
-                public int size() {
-                    return results.count();
+                public void close() {
+                    results.close();
                 }
                 @Override
                 protected void finalize() throws Throwable {
-                    results.close();
+                    close();
                 }
             };
         }

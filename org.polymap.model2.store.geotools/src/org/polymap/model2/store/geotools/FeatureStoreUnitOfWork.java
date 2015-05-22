@@ -16,18 +16,16 @@ package org.polymap.model2.store.geotools;
 
 import static java.util.Collections.singleton;
 
-import java.util.AbstractCollection;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+
 import java.io.IOException;
 
 import org.geotools.data.DefaultTransaction;
@@ -55,10 +53,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
-import org.polymap.core.runtime.Closer;
-import org.polymap.core.runtime.LazyInit;
-import org.polymap.core.runtime.PlainLazyInit;
 
+import org.polymap.core.runtime.Closer;
 import org.polymap.model2.Entity;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.query.Query;
@@ -67,6 +63,7 @@ import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.CompositeStateReference;
+import org.polymap.model2.store.StoreResultSet;
 import org.polymap.model2.store.StoreRuntimeContext;
 import org.polymap.model2.store.StoreUnitOfWork;
 
@@ -176,7 +173,7 @@ public class FeatureStoreUnitOfWork
 
 
     @Override
-    public Collection<CompositeStateReference> executeQuery( Query query ) {
+    public StoreResultSet executeQuery( Query query ) {
         assert query.expression == null || query.expression instanceof Filter : "Wrong query expression type: " + query.expression;
         try {
             // schema
@@ -193,45 +190,35 @@ public class FeatureStoreUnitOfWork
             featureQuery.setStartIndex( query.firstResult );
             featureQuery.setMaxFeatures( query.maxResults );
 
-            return new AbstractCollection<CompositeStateReference>() {
+            return new StoreResultSet() {
                 private FeatureCollection   features = fs.getFeatures( featureQuery );
-                private LazyInit<Integer>   size = new PlainLazyInit( () -> features.size() ); 
+                private FeatureIterator     it = features.features();
 
-                public Iterator<CompositeStateReference> iterator() {
-                    return new Iterator<CompositeStateReference>() {
-                        private FeatureIterator     it = features.features();
-
+                @Override
+                public boolean hasNext() {
+                    return it.hasNext();
+                }
+                @Override
+                public CompositeStateReference next() {
+                    return new CompositeStateReference() {
+                        private Feature feature = it.next();
                         @Override
-                        public boolean hasNext() {
-                            return it.hasNext();
+                        public Object id() {
+                            return feature.getIdentifier().getID();
                         }
                         @Override
-                        public CompositeStateReference next() {
-                            return new CompositeStateReference() {
-                                private Feature feature = it.next();
-                                @Override
-                                public Object id() {
-                                    return feature.getIdentifier().getID();
-                                }
-                                @Override
-                                public CompositeState get() {
-                                    return new FeatureCompositeState( feature, FeatureStoreUnitOfWork.this );
-                                }
-                            };
-                        }
-                        @Override
-                        protected void finalize() throws Throwable {
-                            it = Closer.create().closeAndNull( it );
+                        public CompositeState get() {
+                            return new FeatureCompositeState( feature, FeatureStoreUnitOfWork.this );
                         }
                     };
                 }
                 @Override
-                public int size() {
-                    return size.get();
+                public void close() {
+                    it = Closer.create().closeAndNull( it );
                 }
                 @Override
-                public boolean isEmpty() {
-                    return size() == 0;  //features.isEmpty();
+                protected void finalize() throws Throwable {
+                    close();
                 }
             };
         }

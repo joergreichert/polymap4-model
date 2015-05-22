@@ -20,6 +20,11 @@ import static org.polymap.model2.query.Expressions.matches;
 import static org.polymap.model2.query.Expressions.not;
 import static org.polymap.model2.query.Expressions.notEq;
 import static org.polymap.model2.query.Expressions.or;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.Log;
@@ -27,6 +32,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.google.common.collect.Iterables;
 
+import org.polymap.model2.Entity;
 import org.polymap.model2.query.Expressions;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
@@ -71,7 +77,8 @@ public abstract class SimpleQueryTest
     public void testCommitted() throws Exception {
         createEntities();
         uow.commit();
-        doTestQueries();
+        doQueries();
+        doMultipleRuns();
     }
 
     
@@ -80,7 +87,8 @@ public abstract class SimpleQueryTest
      */
     public void testUncommitted() throws Exception {
         createEntities();
-        doTestQueries();
+        doQueries();
+        doMultipleRuns();
     }
 
     
@@ -115,7 +123,29 @@ public abstract class SimpleQueryTest
     }
     
     
-    protected void doTestQueries() {
+    protected void doMultipleRuns() {
+        ResultSet<Employee> rs = uow.query( Employee.class ).execute();
+
+        // first run of Iterator
+        List<Entity> results = new ArrayList();
+        results.addAll( rs.stream().collect( Collectors.toList() ) );
+        
+        // second run
+        List<Entity> results2 = new ArrayList();
+        results2.addAll( rs.stream().collect( Collectors.toList() ) );
+  
+        for (int i=0; i<results.size(); i++) {
+            assertSame( results.get( i ), results2.get( i ) );
+            assertSame( results.get( i ).state(), results2.get( i ).state() );
+        }
+        
+        // 3rd and 4th run
+        assertEquals( 2, Iterables.size( rs ) );
+        assertEquals( 2, Iterables.size( rs ) );
+    }
+    
+    
+    protected void doQueries() {
         // all
         ResultSet<Employee> rs = uow.query( Employee.class ).execute();
         assertEquals( 2, rs.size() );
