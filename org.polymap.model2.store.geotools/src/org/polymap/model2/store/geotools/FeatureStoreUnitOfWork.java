@@ -55,6 +55,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
 
 import org.polymap.core.runtime.Closer;
+
 import org.polymap.model2.Entity;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.query.Query;
@@ -211,6 +212,10 @@ public class FeatureStoreUnitOfWork
                             return new FeatureCompositeState( feature, FeatureStoreUnitOfWork.this );
                         }
                     };
+                }
+                @Override
+                public int size() {
+                    return features.size();
                 }
                 @Override
                 public void close() {

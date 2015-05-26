@@ -14,20 +14,21 @@
  */
 package org.polymap.model2.engine;
 
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
 import static java.util.Collections.singletonList;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.CREATED;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIFIED;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import java.io.IOException;
 
 import javax.cache.Cache.Entry;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 
@@ -124,59 +125,96 @@ public class UnitOfWorkNested
                         .maxResults( maxResults )
                         .firstResult( firstResult )
                         .execute();
-                
-                // adopt Entities
-                Iterable<T> found = transform( parentRs, new Function<T,T>() {
-                    public T apply( Entity parentEntity ) {
-                        return entity( entityClass, parentEntity.id() ); 
-                    }
-                });
 
-                // filter out modified/removed
-                final Iterable<T> notModified = filter( found, new Predicate<T>() {
-                    public boolean apply( T input ) {
-                        EntityStatus status = input.status();
-                        assert status != EntityStatus.CREATED; 
-                        return status == EntityStatus.LOADED;
-                    }
-                });
+                // unmodified
+                IteratorBuilder<T> unmodifiedResults = IteratorBuilder.on( parentRs )
+                        .map( entity -> entity( entityClass, entity.id() ) )
+                        .filter( entity -> {
+                            EntityStatus status = entity.status();
+                            assert status != EntityStatus.CREATED; 
+                            return status == EntityStatus.LOADED;                            
+                        });
                 
                 // new/updated states -> pre-process
-                final Iterable<Entity> updated = filter( modified.values(), new Predicate<Entity>() {
-                    public boolean apply( Entity entity ) {
-                        if (entity.getClass().equals( entityClass ) && (entity.status() == CREATED || entity.status() == MODIFIED )) {
-                            if (expression == null) {
-                                return true;
+                IteratorBuilder<T> modifiedResults = (IteratorBuilder<T>)IteratorBuilder.on( modified.values() )
+                        .filter( entity -> {
+                            if (entity.getClass().equals( entityClass ) 
+                                    && (entity.status() == CREATED || entity.status() == MODIFIED )) {
+                                if (expression == null) {
+                                    return true;
+                                }
+                                else if (expression instanceof BooleanExpression) {
+                                    return expression.evaluate( entity );
+                                }
+                                else {
+                                    return storeUow.evaluate( entity.state(), expression );
+                                }
                             }
-                            else if (expression instanceof BooleanExpression) {
-                                return ((BooleanExpression)expression).evaluate( entity );
-                            }
-                            else {
-                                return storeUow.evaluate( entity.state(), expression );
-                            }
-                        }
-                        return false;
-                    }                    
-                });
-
+                            return false;
+                        });
+                
+                // ResultSet, caching the ids for subsequent runs
                 return new ResultSet<T>() {
-                    /** The cached size; not synchronized */
-                    private int size = -1;
+
+                    /** null after one full run */
+                    private Iterator<T>     results = unmodifiedResults.concat( modifiedResults );
+                    private List<Object>    cachedIds = new ArrayList( 1024 );
+                    /** The cached cachedSize; not synchronized */
+                    private int             cachedSize = -1;
 
                     @Override
                     public Iterator<T> iterator() {
-                        return (Iterator<T>)Iterators.concat( notModified.iterator(), updated.iterator() );
+                        return new Iterator<T>() {
+                            int index = -1;
+                            @Override
+                            public boolean hasNext() {
+                                if (index+1 < cachedIds.size() || (results != null && results.hasNext())) {
+                                    return true;
+                                }
+                                else {
+                                    parentRs.close();
+                                    results = null;
+                                    return false;
+                                }
+                            }
+                            @Override
+                            public T next() {
+                                if (++index < cachedIds.size()) {
+                                    return entity( entityClass, cachedIds.get( index ), Optional.empty() );
+                                }
+                                else {
+                                    assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();
+                                    T result = results.next();
+                                    cachedIds.add( result.id() );
+                                    return result;
+                                }
+                            }
+                        };
                     }
+                    
                     @Override
                     public int size() {
-                        if (size == -1) {
-                            // avoid iterating if no modifications
-                            size = modified.isEmpty() ? parentRs.size() : Iterators.size( iterator() );
+                        if (cachedSize == -1) {
+                            cachedSize = results == null
+                                    ? cachedIds.size()
+                                    : modified.isEmpty() 
+                                            ? parentRs.size()
+                                            : Iterators.size( iterator() );
                         }
-                        return size;
+                        return cachedSize;
                     }
+                    
+                    @Override
+                    public Stream<T> stream() {
+                        // XXX use cachedIds.size() if available
+                        return StreamSupport.stream( spliterator(), false );
+                    }
+
                     @Override
                     public void close() {
+                        parentRs.close();
+                        results = null;
+                        cachedIds = null;
                     }
                 };
             }

@@ -41,6 +41,10 @@ public interface ResultSet<T extends Entity>
         @Override
         public void close() {
         }
+        @Override
+        public Stream stream() {
+            return StreamSupport.stream( spliterator(), false );
+        }
     };
     
     // ****************************************************
@@ -50,12 +54,6 @@ public interface ResultSet<T extends Entity>
     @Override
     public void close();
     
-    /**
-     * 
-     */
-    default public Stream<T> stream() {
-        // XXX is this good? fast? intented to be used this way?
-        return StreamSupport.stream( spliterator(), false );
-    }
+    public Stream<T> stream();
     
 }

@@ -32,10 +32,10 @@ public interface CompositeStateReference
 
     public Object id();
     
+    
     /**
-     * Provides a state that was <b>preloaded</b> during execution of the query.
-     * 
-     * @return Null if no state was preloaded be the query.
+     * If available, provides a state that was <b>preloaded</b> during execution of
+     * the query, or null if no such preloaded state exists.
      */
     public CompositeState get();
     

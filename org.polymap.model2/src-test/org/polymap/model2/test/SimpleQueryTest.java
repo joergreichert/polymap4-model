@@ -31,6 +31,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Entity;
 import org.polymap.model2.query.Expressions;
@@ -79,6 +80,7 @@ public abstract class SimpleQueryTest
         uow.commit();
         doQueries();
         doMultipleRuns();
+        doPartialRun();
     }
 
     
@@ -89,6 +91,7 @@ public abstract class SimpleQueryTest
         createEntities();
         doQueries();
         doMultipleRuns();
+        doPartialRun();
     }
 
     
@@ -142,6 +145,17 @@ public abstract class SimpleQueryTest
         // 3rd and 4th run
         assertEquals( 2, Iterables.size( rs ) );
         assertEquals( 2, Iterables.size( rs ) );
+    }
+    
+    
+    protected void doPartialRun() {
+        ResultSet<Employee> rs = uow.query( Employee.class ).execute();
+
+        // build 2 iterators on same ResultSet
+        Employee first = Iterators.get( rs.iterator(), 0 );
+        Employee second = Iterators.get( rs.iterator(), 1 );
+ 
+        assertNotSame( first, second );
     }
     
     

@@ -168,6 +168,10 @@ public class RecordStoreUnitOfWork
                     };
                 }
                 @Override
+                public int size() {
+                    return results.count();
+                }
+                @Override
                 public void close() {
                     results.close();
                 }

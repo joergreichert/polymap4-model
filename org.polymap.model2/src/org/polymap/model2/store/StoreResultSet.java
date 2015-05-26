@@ -24,7 +24,7 @@ import java.util.Iterator;
 public interface StoreResultSet
         extends Iterator<CompositeStateReference>, AutoCloseable {
 
-//    public int size();
+    public int size();
 
     @Override
     public void close();

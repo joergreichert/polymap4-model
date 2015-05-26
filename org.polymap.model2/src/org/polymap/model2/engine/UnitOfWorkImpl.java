@@ -18,14 +18,15 @@ import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.CREAT
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIFIED;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import java.io.IOException;
 
@@ -49,7 +50,6 @@ import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
-import org.polymap.model2.store.CompositeStateReference;
 import org.polymap.model2.store.StoreResultSet;
 import org.polymap.model2.store.StoreUnitOfWork;
 
@@ -227,11 +227,8 @@ public class UnitOfWorkImpl
     public <T extends Entity> Query<T> query( final Class<T> entityClass ) {
         checkOpen();
         return new Query( entityClass ) {
+            @Override
             public ResultSet<T> execute() {
-                // actual execute the query just once against the backend store, result ids
-                // are cached for subsequent calls to iterator(); however, creating and filtering
-                // entities is done on-the-fly to avoid loading all Entities in memory at same time
-
                 // the preloaded entity from the CompositeStateReference is used to build the
                 // entity; but we are not keeping a strong ref to it in order to allow the cache to
                 // evict the entity state; 
@@ -240,65 +237,97 @@ public class UnitOfWorkImpl
                 // may contain refs to the states which would kept in memory for the lifetime of
                 // the ResultSet otherwise
                 
-                // XXX do this on-the-fly on first run to allow for big ResultSets that are not fitting
-                // into memory and avoid the double call of entity()
-                final Collection<Object> ids = new ArrayList( 1024 );
-                try ( StoreResultSet rs = storeUow.executeQuery( this ) ) {
-                    while (rs.hasNext()) {
-                        CompositeStateReference ref = rs.next();
-                        T entity = entity( entityClass, ref.id(), Optional.of( ref ) );
-                        ids.add( entity.id() );
-                    }
-                }
+                // unmodified
+                final StoreResultSet rs = storeUow.executeQuery( this );
+                IteratorBuilder<T> unmodifiedResults = IteratorBuilder.on( rs )
+                        .map( ref -> entity( entityClass, ref.id(), Optional.of( ref ) ) )
+                        .filter( entity -> {
+                            EntityStatus status = entity.status();
+                            assert status != EntityStatus.CREATED; 
+                            return status == EntityStatus.LOADED;                            
+                        });
                 
-                // 
+                // modified
+                // XXX not cached, done for every call to iterator()
+                IteratorBuilder<T> modifiedResults = (IteratorBuilder<T>)IteratorBuilder.on( modified.values() )
+                        .filter( entity -> {
+                            if (entity.getClass().equals( entityClass ) 
+                                    && (entity.status() == CREATED || entity.status() == MODIFIED )) {
+                                if (expression == null) {
+                                    return true;
+                                }
+                                else if (expression instanceof BooleanExpression) {
+                                    return expression.evaluate( entity );
+                                }
+                                else {
+                                    return storeUow.evaluate( entity.state(), expression );
+                                }
+                            }
+                            return false;
+                        });
+
+                // ResultSet, caching the ids for subsequent runs
                 return new ResultSet<T>() {
 
-                    /** The cached size; not synchronized */
-                    private int             size = -1;
+                    /** null after one full run */
+                    private Iterator<T>     results = unmodifiedResults.concat( modifiedResults );
+                    private List<Object>    cachedIds = new ArrayList( 1024 );
+                    /** The cached cachedSize; not synchronized */
+                    private int             cachedSize = -1;
 
                     @Override
                     public Iterator<T> iterator() {
-                        // unmodified
-                        Stream<T> foundUnmodified = ids.stream()
-                                .map( id -> entity( entityClass, id, Optional.empty() ) )
-                                .filter( entity -> {
-                                    EntityStatus status = entity.status();
-                                    assert status != EntityStatus.CREATED; 
-                                    return status == EntityStatus.LOADED;                            
-                                });
-                        
-                        // modified
-                        // XXX not cached, done for every call to iterator()
-                        Stream<T> foundModified = (Stream<T>)modified.values().stream()
-                                .filter( entity -> {
-                                    if (entity.getClass().equals( entityClass ) 
-                                            && (entity.status() == CREATED || entity.status() == MODIFIED )) {
-                                        if (expression == null) {
-                                            return true;
-                                        }
-                                        else if (expression instanceof BooleanExpression) {
-                                            return expression.evaluate( entity );
-                                        }
-                                        else {
-                                            return storeUow.evaluate( entity.state(), expression );
-                                        }
-                                    }
+                        return new Iterator<T>() {
+                            int index = -1;
+                            @Override
+                            public boolean hasNext() {
+                                if (index+1 < cachedIds.size() || (results != null && results.hasNext())) {
+                                    return true;
+                                }
+                                else {
+                                    rs.close();
+                                    results = null;
                                     return false;
-                                });
-                        return Stream.concat( foundUnmodified, foundModified ).iterator();
+                                }
+                            }
+                            @Override
+                            public T next() {
+                                if (++index < cachedIds.size()) {
+                                    return entity( entityClass, cachedIds.get( index ), Optional.empty() );
+                                }
+                                else {
+                                    assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();
+                                    T result = results.next();
+                                    cachedIds.add( result.id() );
+                                    return result;
+                                }
+                            }
+                        };
                     }
+                    
                     @Override
                     public int size() {
-                        if (size == -1) {
-                            // avoid iterating if no modifications
-                            size = modified.isEmpty() ? ids.size() : Iterators.size( iterator() );
+                        if (cachedSize == -1) {
+                            cachedSize = results == null
+                                    ? cachedIds.size()
+                                    : modified.isEmpty() 
+                                            ? rs.size()
+                                            : Iterators.size( iterator() );
                         }
-                        return size;
+                        return cachedSize;
                     }
+                    
+                    @Override
+                    public Stream<T> stream() {
+                        // XXX use cachedIds.size() if available
+                        return StreamSupport.stream( spliterator(), false );
+                    }
+
                     @Override
                     public void close() {
-                        // already closed
+                        rs.close();
+                        results = null;
+                        cachedIds = null;
                     }
                 };
             }
