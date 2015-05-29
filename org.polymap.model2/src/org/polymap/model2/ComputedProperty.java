@@ -31,14 +31,19 @@ public abstract class ComputedProperty<T>
     protected Composite         composite;
     
     
-    public ComputedProperty( PropertyInfo info, Composite composite ) {
-        this.composite = composite;
-        this.info = info;
+    protected void init( PropertyInfo _info, Composite _composite ) {
+        this.composite = _composite;
+        this.info = _info;
     }
 
     @Override
     public T createValue( ValueInitializer<T> initializer ) {
-        throw new RuntimeException( "not yet implemented." );
+        throw new UnsupportedOperationException( "Method needs to be overridden." );
+    }
+
+    @Override
+    public void set( T value ) {
+        throw new UnsupportedOperationException( "Method needs to be overridden." );
     }
 
     @Override

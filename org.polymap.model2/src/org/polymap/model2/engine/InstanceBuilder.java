@@ -20,6 +20,7 @@ import java.util.List;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import javax.cache.configuration.MutableConfiguration;
 
@@ -66,6 +67,8 @@ public final class InstanceBuilder {
 
     private static Field                        concernDelegateField;
     
+    private static Method                       computedPropertyInitMethod;
+    
     protected static LoadingCache<Field,List<Class>>   concerns;
 
     static {
@@ -81,6 +84,9 @@ public final class InstanceBuilder {
             
             concernDelegateField = PropertyConcernBase.class.getDeclaredField( "delegate" );
             concernDelegateField.setAccessible( true );
+            
+            computedPropertyInitMethod = ComputedProperty.class.getDeclaredMethod( "init", PropertyInfo.class, Composite.class );
+            computedPropertyInitMethod.setAccessible( true );
         }
         catch (Exception e) {
             log.error( "", e );
@@ -165,9 +171,8 @@ public final class InstanceBuilder {
                         // Computed
                         if (info.isComputed()) {
                             Computed a = ((PropertyInfoImpl)info).getField().getAnnotation( Computed.class );
-                            Constructor<? extends ComputedProperty> ctor = a.value().getConstructor( PropertyInfo.class, Composite.class );
-                            ctor.setAccessible( true );
-                            prop = ctor.newInstance( info, instance );
+                            prop = a.value().newInstance();
+                            computedPropertyInitMethod.invoke( prop, info, instance );
                             // always check modifications, default value, immutable, nullable
                             prop = new ConstraintsPropertyInterceptor( (Property)prop, (EntityRuntimeContextImpl)context );
                         }
