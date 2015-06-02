@@ -62,6 +62,10 @@ public class ConfigurationFactory {
                         if (value == null && defaultDouble != null) {
                             return defaultDouble.value();
                         }
+                        DefaultInt defaultInt = f.getAnnotation( DefaultInt.class );
+                        if (value == null && defaultInt != null) {
+                            return defaultInt.value();
+                        }
                         DefaultBoolean defaultBoolean = f.getAnnotation( DefaultBoolean.class );
                         if (value == null && defaultBoolean != null) {
                             return defaultBoolean.value();

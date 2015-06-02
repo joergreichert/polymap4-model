@@ -21,7 +21,6 @@ import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIF
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -180,7 +179,7 @@ public class UnitOfWorkNested
                             @Override
                             public T next() {
                                 if (++index < cachedIds.size()) {
-                                    return entity( entityClass, cachedIds.get( index ), Optional.empty() );
+                                    return entity( entityClass, cachedIds.get( index ), null );
                                 }
                                 else {
                                     assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();

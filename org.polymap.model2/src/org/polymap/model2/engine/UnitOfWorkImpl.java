@@ -20,7 +20,6 @@ import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIF
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -156,23 +155,35 @@ public class UnitOfWorkImpl
 
     @Override
     public <T extends Entity> T entity( final Class<T> entityClass, final Object id ) {
-        return entity( entityClass, id, Optional.empty() );
+        return entity( entityClass, id, null );
     }
 
 
+    /**
+     * 
+     *
+     * @param entityClass
+     * @param id
+     * @param preloaded Optional supplier of an already loaded CompositeState.
+     * @return
+     */
     protected <T extends Entity> T entity( 
-            final Class<T> entityClass, 
+            final Class<T> entityClass,
             final Object id, 
-            final Optional<Supplier<CompositeState>> preloaded ) {
+            final Supplier<CompositeState> preloaded ) {
         
         assert entityClass != null;
         assert id != null;
         checkOpen();
         T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {
-                CompositeState state = preloaded
-                        .map( supplier -> supplier.get() )
-                        .orElse( storeUow.loadEntityState( id, entityClass ) );
+                // get preloaded if provided
+                CompositeState state = preloaded != null ? preloaded.get() : null;
+                // no preloaded or it returned null?
+                state = state != null ? state : storeUow.loadEntityState( id, entityClass );
+                
+//                        .map( supplier -> supplier.get() )
+//                        .orElse( storeUow.loadEntityState( id, entityClass ) );
                 
                 return state != null ? repo.buildEntity( state, entityClass, UnitOfWorkImpl.this ) : null;
             }
@@ -240,7 +251,7 @@ public class UnitOfWorkImpl
                 // unmodified
                 final StoreResultSet rs = storeUow.executeQuery( this );
                 IteratorBuilder<T> unmodifiedResults = IteratorBuilder.on( rs )
-                        .map( ref -> entity( entityClass, ref.id(), Optional.of( ref ) ) )
+                        .map( ref -> entity( entityClass, ref.id(), ref ) )
                         .filter( entity -> {
                             EntityStatus status = entity.status();
                             assert status != EntityStatus.CREATED; 
@@ -293,7 +304,7 @@ public class UnitOfWorkImpl
                             @Override
                             public T next() {
                                 if (++index < cachedIds.size()) {
-                                    return entity( entityClass, cachedIds.get( index ), Optional.empty() );
+                                    return entity( entityClass, cachedIds.get( index ), null );
                                 }
                                 else {
                                     assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();
