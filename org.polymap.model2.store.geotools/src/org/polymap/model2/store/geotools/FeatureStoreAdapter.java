@@ -27,8 +27,8 @@ import org.opengis.feature.type.FeatureType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.polymap.core.runtime.config.Config;
-import org.polymap.core.runtime.config.ConfigurationFactory;
+import org.polymap.core.runtime.config.Config2;
+import org.polymap.core.runtime.config.Configurable;
 import org.polymap.core.runtime.config.Defaults;
 
 import org.polymap.model2.CollectionProperty;
@@ -47,6 +47,7 @@ import org.polymap.model2.store.StoreUnitOfWork;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class FeatureStoreAdapter
+        extends Configurable
         implements StoreSPI {
 
     private static Log log = LogFactory.getLog( FeatureStoreAdapter.class );
@@ -56,13 +57,12 @@ public class FeatureStoreAdapter
     private DataAccess                  store;
     
     @Defaults
-    public Config<FeatureStoreAdapter,Boolean>  createOrUpdateSchemas;
+    public Config2<FeatureStoreAdapter,Boolean>  createOrUpdateSchemas;
 
 
     public FeatureStoreAdapter( DataAccess store ) {
         assert store != null;
         this.store = store;
-        ConfigurationFactory.inject( this );
     }
 
 
