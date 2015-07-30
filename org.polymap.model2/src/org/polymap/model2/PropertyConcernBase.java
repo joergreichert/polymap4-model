@@ -14,6 +14,9 @@
  */
 package org.polymap.model2;
 
+import java.util.AbstractCollection;
+import java.util.Iterator;
+
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.PropertyInfo;
 
@@ -26,6 +29,7 @@ import org.polymap.model2.runtime.PropertyInfo;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public abstract class PropertyConcernBase<T>
+        extends AbstractCollection<T>
         implements PropertyBase<T> {
 
     protected EntityRuntimeContext      context;
@@ -39,6 +43,24 @@ public abstract class PropertyConcernBase<T>
     @Override
     public PropertyInfo info() {
         return delegate.info();
+    }
+
+
+    @Override
+    public Iterator<T> iterator() {
+        return ((ManyAssociation)delegate).iterator();
+    }
+
+
+    @Override
+    public int size() {
+        return ((ManyAssociation)delegate).size();
+    }
+
+
+    @Override
+    public boolean add( T e ) {
+        return ((ManyAssociation)delegate).add( e );
     }    
     
 }
