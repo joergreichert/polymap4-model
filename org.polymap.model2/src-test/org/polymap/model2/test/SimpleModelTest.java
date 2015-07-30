@@ -159,7 +159,9 @@ public abstract class SimpleModelTest
         for (int i=0; i<11; i++) {
             Employee employee = uow.createEntity( Employee.class, null );
             employee.jap.set( i );
-            employee.as( TrackableMixin.class ).track.set( 100 );
+            employee.as( TrackableMixin.class )
+                    .orElseThrow( () -> new IllegalStateException( "Kein Mixin: Trackable" ) )
+                    .track.set( 100 );
         }
         // commit
         log.info( "### COMMIT ###" );
@@ -181,11 +183,11 @@ public abstract class SimpleModelTest
     public void testMixinComputed() throws Exception {
         Employee employee = uow.createEntity( Employee.class, null );
         
-        TrackableMixin trackable = employee.as( TrackableMixin.class );
+        TrackableMixin trackable = employee.as( TrackableMixin.class ).get();
         assertNotNull( trackable );
         assertSame( employee.state(), trackable.state() );
 
-        trackable = employee.as( TrackableMixin.class );
+        trackable = employee.as( TrackableMixin.class ).get();
         assertNotNull( trackable );
         assertSame( employee.state(), trackable.state() );
         
@@ -199,7 +201,7 @@ public abstract class SimpleModelTest
         // check
         UnitOfWork uow2 = repo.newUnitOfWork();
         employee = uow2.entityForState( Employee.class, employee.state() );
-        trackable = employee.as( TrackableMixin.class );
+        trackable = employee.as( TrackableMixin.class ).get();
         assertNotNull( trackable );
         assertEquals( 10, (int)trackable.track.get() );
     }

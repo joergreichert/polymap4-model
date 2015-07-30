@@ -14,6 +14,8 @@
  */
 package org.polymap.model2;
 
+import java.util.Optional;
+
 import org.polymap.model2.engine.UnitOfWorkImpl;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
@@ -60,8 +62,9 @@ public abstract class Entity
      * @param mixinClass
      * @return A mixin of the given type, or null if no such mixin was defined.
      */
-    public <T extends Composite> T as( Class<T> mixinClass ) {
-        return ((UnitOfWorkImpl)context.getUnitOfWork()).mixin( mixinClass, this );
+    public <T extends Composite> Optional<T> as( Class<T> mixinClass ) {
+        T result = ((UnitOfWorkImpl)context.getUnitOfWork()).mixin( mixinClass, this );
+        return Optional.ofNullable( result );
     }
 
     protected void methodProlog( String methodName, Object... args ) {

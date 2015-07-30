@@ -12,6 +12,7 @@ Require-Bundle: org.polymap.model2;bundle-version="3.0.0",
 Import-Package: org.apache.commons.logging
 Export-Package: org.apache.lucene,
  org.apache.lucene.analysis,
+ org.apache.lucene.analysis.tokenattributes,
  org.apache.lucene.collation,
  org.apache.lucene.document,
  org.apache.lucene.index,

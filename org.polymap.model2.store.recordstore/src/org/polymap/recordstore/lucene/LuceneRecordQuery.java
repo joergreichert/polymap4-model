@@ -146,7 +146,7 @@ public class LuceneRecordQuery
                         if (fieldName.equals( LuceneRecordState.ID_FIELD )) {
                             return FieldSelectorResult.LOAD;
                         }
-                        else if (sel.accept( fieldName )) { 
+                        else if (sel.test( fieldName )) { 
                             return FieldSelectorResult.LOAD;
                         }
                         return FieldSelectorResult.NO_LOAD;

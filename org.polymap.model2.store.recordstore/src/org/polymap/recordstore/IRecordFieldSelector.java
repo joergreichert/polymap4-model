@@ -14,19 +14,23 @@
  */
 package org.polymap.recordstore;
 
+import java.util.function.Predicate;
+
 /**
  * 
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public interface IRecordFieldSelector {
+public interface IRecordFieldSelector
+        extends Predicate<String> {
 
     public static final IRecordFieldSelector ALL = new IRecordFieldSelector() {
-        public boolean accept( String key ) {
+        public boolean test( String key ) {
             return true;
         }
     };
 
-    public boolean accept( String key );
+    @Override
+    public boolean test( String key );
     
 }

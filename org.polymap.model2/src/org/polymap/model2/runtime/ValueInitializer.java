@@ -19,6 +19,7 @@ package org.polymap.model2.runtime;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
+@FunctionalInterface
 public interface ValueInitializer<T> {
     
     public T initialize( T prototype ) throws Exception;

@@ -153,7 +153,7 @@ class LuceneQuantifierHandler
         
         // load just the ID field
         recordQuery.setFieldSelector( new IRecordFieldSelector() {
-            public boolean accept( String key ) {
+            public boolean test( String key ) {
                 return key.equals( LuceneRecordState.ID_FIELD );
             }
         });

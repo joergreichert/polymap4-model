@@ -157,7 +157,7 @@ public final class LuceneRecordState
             // FIXME ValueCoder may have different/additional keys
             doc.removeField( key );
         }
-        boolean indexed = store.getIndexFieldSelector().accept( key );
+        boolean indexed = store.getIndexFieldSelector().test( key );
         store.valueCoders.encode( doc, key, value, indexed );
         
         return this;

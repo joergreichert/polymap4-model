@@ -245,10 +245,10 @@ public class RecordStoreUnitOfWork
 
     @Override
     public void rollback() {
-        assert tx != null;
-
-        tx.discard();
-        tx = null;
+        if (tx != null) {
+            tx.discard();
+            tx = null;
+        }
     }
 
 

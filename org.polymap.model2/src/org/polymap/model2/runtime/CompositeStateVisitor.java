@@ -102,7 +102,7 @@ public abstract class CompositeStateVisitor {
         if (composite instanceof Entity) {
             Collection<Class<? extends Composite>> mixins = composite.info().getMixins();
             for (Class<? extends Composite> mixinClass : mixins) {
-                Composite mixin = ((Entity)composite).as( mixinClass );
+                Composite mixin = ((Entity)composite).as( mixinClass ).get();
                 processComposite( mixin );
             }
         }
