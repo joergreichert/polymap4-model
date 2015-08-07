@@ -221,7 +221,7 @@ public final class InstanceBuilder {
                         }
                         StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
                         prop = new ManyAssociationImpl( context, storeProp );
-                        // FIXME prop = new ConstraintsAssociationInterceptor( (Association)prop, (EntityRuntimeContextImpl)context );
+                        prop = new ConstraintsManyAssociationInterceptor( (ManyAssociation)prop, (EntityRuntimeContextImpl)context );
                         // concerns
                         for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
                             prop = concern;

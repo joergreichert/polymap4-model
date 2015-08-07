@@ -78,6 +78,7 @@ public abstract class ComplexModelTest
     
 
     public void testManyAssociation() {
+        // create entity
         Company company = uow.createEntity( Company.class, null );
         Employee employee = uow.createEntity( Employee.class, null );
         company.employees.add( employee );
@@ -88,13 +89,30 @@ public abstract class ComplexModelTest
         
         uow.commit();
 
+        // fetch
         UnitOfWork uow2 = repo.newUnitOfWork();
         Company company2 = uow2.entity( Company.class, company.id() );
         log.info( "Company: " + company2 );
 
+        // check
         assertEquals( 1, company2.employees.size() );
-        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
-        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
+//        assertEquals( employee, Iterables.getOnlyElement( company2.employees ) );
+        assertNotSame( employee, Iterables.getOnlyElement( company2.employees ) );
+        assertEquals( employee.id(), company.employees.stream().findFirst().get().id() );
+        
+        // modify
+        Employee employee2 = uow2.createEntity( Employee.class, null );
+        company2.employees.add( employee2 );
+        uow2.commit();
+
+        // fetch
+        UnitOfWork uow3 = repo.newUnitOfWork();
+        Company company3 = uow3.entity( Company.class, company.id() );
+        log.info( "Company: " + company3 );
+
+        assertEquals( 2, company3.employees.size() );
+//        assertEquals( employee, Iterables.getOnlyElement( company3.employees ) );
+//        assertSame( employee, Iterables.getOnlyElement( company3.employees ) );
     }
 
     
