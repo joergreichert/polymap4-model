@@ -159,6 +159,12 @@ public class UnitOfWorkImpl
     }
 
 
+    @Override
+    public <T extends Entity> T entity( T entity ) {
+        return (T)entity( entity.getClass(), entity.id(), null );
+    }
+
+
     /**
      * 
      *
@@ -395,9 +401,14 @@ public class UnitOfWorkImpl
             catch (Exception e) {
                 throw new ModelRuntimeException( e );
             }
+            finally {
+                if (prepareResult != PREPARED) {
+                    rollback();
+                }                
+            }
         }
         if (prepareResult != PREPARED) {
-            throw new ModelRuntimeException( "UnitOfWork was not successfully prepared for commit." );
+            throw new ModelRuntimeException( "UnitOfWork is not prepared successfully for commit." );
         }
         // commit store
         storeUow.commit();

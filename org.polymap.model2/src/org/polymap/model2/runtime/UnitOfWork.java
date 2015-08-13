@@ -66,6 +66,18 @@ public interface UnitOfWork
      */
     public <T extends Entity> T entity( Class<T> entityClass, Object id );
 
+    /**
+     * 
+     * 
+     * @param entity An entity loaded from another {@link UnitOfWork}.
+     * @param <T> The type of the entity to build.
+     * @return A newly loaded {@link Entity} instance or a previously created,
+     *         cached instance. Returns null if no Entity exists for the given id.
+     *         Also returns null if the Entity was {@link #removeEntity(Entity)
+     *         removed} for this UnitOfWork.
+     */
+    public <T extends Entity> T entity( T entity );
+
 //    public <T extends Composite> T mixin( Class<T> entityClass, Entity entity );
 
 
