@@ -19,22 +19,24 @@ import java.io.IOException;
 import org.polymap.model2.Entity;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
+import org.polymap.model2.runtime.EntityRepository.Configuration;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.StoreSPI;
 
 /**
- * A UnitOfWork is the one and only way to actually access Entities and to work with
- * them. A UnitOfWork tracks all modifications. It is used to logically group
+ * A UnitOfWork is the only way to actually <b>access</b> Entities and to work with
+ * them. A UnitOfWork tracks all <b>modifications</b>. It is used to logically group
  * operations that modify a set of entities. These modifications can then be written
  * down to the underlying store in one atomic transaction.
  * <p/>
  * Before {@link #prepare()}/{@link #commit()} all modifications are local to the
  * UnitOfWork. After {@link #commit()} all modifications are persitently stored. By
  * calling {@link #close()} the UnitOfWork can be *discarded* at any point in time.
- * There is no way to revert or 'taking back' modifications.
  * <p/>
- * UnitOfWork can by safely accessed from multiple threads.
+ * UnitOfWork can be safely accessed from <b>multiple threads</b>. The strategy to
+ * handle attempts to concurrently {@link #prepare()}/{@link #commit()} can be set via
+ * {@link Configuration#commitLockStrategy}.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

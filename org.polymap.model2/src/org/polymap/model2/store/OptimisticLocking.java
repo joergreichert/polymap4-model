@@ -45,8 +45,6 @@ public class OptimisticLocking
 
     private static Log log = LogFactory.getLog( OptimisticLocking.class );
     
-//    private static final IMessages          i18n = Messages.forPrefix( "OptimisticLocking" );
-    
     private StoreRuntimeContext             context;
     
     private ConcurrentMap<Object,Integer>   storeVersions = new ConcurrentHashMap( 256, 0.75f, 4 );
@@ -138,6 +136,13 @@ public class OptimisticLocking
         }
 
         
+        @Override
+        public void rollback() {
+            super.rollback();
+            prepared = null;
+        }
+
+
         @Override
         public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass ) {
             CompositeState result = suow.loadEntityState( id, entityClass );

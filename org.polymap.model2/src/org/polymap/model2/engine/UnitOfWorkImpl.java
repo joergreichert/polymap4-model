@@ -44,6 +44,7 @@ import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
+import org.polymap.model2.runtime.CommitLockStrategy;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
@@ -77,6 +78,8 @@ public class UnitOfWorkImpl
     protected ConcurrentMap<Object,Entity>  modified;
     
     protected volatile Exception            prepareResult;
+    
+    protected CommitLockStrategy            commitLock;
 
     
     protected UnitOfWorkImpl( EntityRepositoryImpl repo, StoreUnitOfWork suow ) {
@@ -90,6 +93,8 @@ public class UnitOfWorkImpl
         this.loaded = LoadingCache.create( cacheManager, cacheConfig );
         this.loadedMixins = LoadingCache.create( cacheManager, cacheConfig );
         this.modified = new ConcurrentHashMap( 1024, 0.75f, 4 );
+
+        commitLock = repo.getConfig().commitLockStrategy.get().get();
         
 //        // check evicted entries and re-insert if modified
 //        this.loaded.addEvictionListener( new CacheEvictionListener<Object,Entity>() {
@@ -367,6 +372,7 @@ public class UnitOfWorkImpl
     @Override
     public void prepare() throws IOException, ConcurrentEntityModificationException {
         checkOpen();
+        commitLock.lock();
         try {
             prepareResult = null;
             storeUow.prepareCommit( modified.values() );
@@ -419,6 +425,7 @@ public class UnitOfWorkImpl
             repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
         modified.clear();
+        commitLock.unlock();
     }
 
 
@@ -432,11 +439,13 @@ public class UnitOfWorkImpl
         // discard modified Entities
         modified.clear();
         loaded.clear();
+        commitLock.unlock();
     }
 
 
     public void close() {
         if (isOpen()) {
+            commitLock.unlock();
             storeUow.close();
             repo = null;
             loaded.clear();

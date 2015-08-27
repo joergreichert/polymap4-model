@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.runtime;
 
+import java.util.function.Supplier;
+
 import javax.cache.CacheManager;
 
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
@@ -71,6 +73,15 @@ public abstract class EntityRepository
         public Property<Configuration,CacheManager> cacheManager;
         
         /**
+         * The strategy to handle concurrent attempts to prepare/commit. Defaults to
+         * {@link CommitLockStrategy.FailOnConcurrentCommit}
+         * 
+         * @see CommitLockStrategy.FailOnConcurrentCommit
+         * @see CommitLockStrategy.Serialize
+         */
+        public Property<Configuration,Supplier<CommitLockStrategy>> commitLockStrategy;
+        
+        /**
          * @deprecated Not supported yet.
          */
         public Property<Configuration,NameInStoreMapper> nameInStoreMapper;
@@ -78,6 +89,9 @@ public abstract class EntityRepository
         public EntityRepository create() {
             if (cacheManager.get() == null) {
                 cacheManager.set( new SimpleCacheManager() );
+            }
+            if (commitLockStrategy.get() == null) {
+                commitLockStrategy.set( () -> new CommitLockStrategy.FailOnConcurrentCommit() );
             }
             if (nameInStoreMapper.get() == null) {
                 nameInStoreMapper.set( new DefaultNameInStoreMapper() );
