@@ -117,6 +117,7 @@ public class UnitOfWorkImpl
      * Raises the status of the given Entity. Called by {@link ConstraintsPropertyInterceptor}.
      */
     protected void raiseStatus( Entity entity) {
+        checkOpen();
         if (entity.status() == EntityStatus.MODIFIED
                 || entity.status() == EntityStatus.REMOVED) {
             modified.putIfAbsent( entity.id(), entity );

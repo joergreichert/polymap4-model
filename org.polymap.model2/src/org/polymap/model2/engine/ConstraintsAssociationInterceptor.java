@@ -54,7 +54,8 @@ final class ConstraintsAssociationInterceptor<T extends Entity>
     public void set( T value ) {
         context.checkEviction();
         
-        if (isImmutable) {
+        // XXX this should always fail outside a ValueInitializer
+        if (isImmutable && delegate().get() != null) {
             throw new ModelRuntimeException( "Property is @Immutable: " + fullPropName() );
         }
         if (!isNullable && value == null) {

@@ -117,6 +117,17 @@ public class OptimisticLockingTest
         uow.commit();
         uow.entity( Employee.class, employee.id() ).name.set( "modified2" );
         uow.commit();
+
+        // single uow, one entity
+        uow = repo.newUnitOfWork();
+        Employee entity = uow.entity( Employee.class, employee.id() );
+        entity.name.set( "modified" );
+        uow.commit();
+        entity.name.set( "modified2" );
+        uow.commit();
+
+        uow = repo.newUnitOfWork();
+        assertEquals( "modified2", uow.entity( Employee.class, employee.id() ).name.get() );
     }
 
 
