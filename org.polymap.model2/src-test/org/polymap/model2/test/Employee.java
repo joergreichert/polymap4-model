@@ -19,6 +19,8 @@ import java.util.Date;
 import org.polymap.model2.Association;
 import org.polymap.model2.BidiAssociationConcern;
 import org.polymap.model2.BidiAssociationName;
+import org.polymap.model2.Computed;
+import org.polymap.model2.ComputedBidiAssocation;
 import org.polymap.model2.Concerns;
 import org.polymap.model2.Defaults;
 import org.polymap.model2.NameInStore;
@@ -62,14 +64,8 @@ public class Employee
     @BidiAssociationName( "employees" )
     public Association<Company>     company;
     
-//    @Computed(ComputedBidiAssocation.class)
-//    public Property<Company>        computedCompany;
-    
-//    /**
-//     * Computed property: back reference of {@link Company#employees()}.
-//     */
-//    public Company company() {
-//        throw new RuntimeException();
-//    }
+    @Computed(ComputedBidiAssocation.class)
+    @BidiAssociationName( "employees" )
+    public Property<Company>        computedCompany;
     
 }

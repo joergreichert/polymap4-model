@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.query.grammar;
 
+import java.util.Arrays;
+
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
 
@@ -30,6 +32,8 @@ public class IdPredicate<T extends Entity>
     
     public IdPredicate( Object... ids ) {
         assert ids != null && ids.length > 0;
+        assert !Arrays.stream( ids ).filter( id -> id instanceof Composite ).findAny().isPresent() 
+                : "Composite is not allowed as key. Did you cast parameter of Expressions.id() correctly?";
         this.ids = ids;
     }
 

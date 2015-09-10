@@ -24,7 +24,7 @@ import org.polymap.model2.runtime.PropertyInfo;
  * Abstract base class for all property concerns.
  * <p/>
  * Implementations should be thread save. Instances might be instantiated on-demand
- * and so cannot hold an internal state.
+ * and hence cannot hold an internal state.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

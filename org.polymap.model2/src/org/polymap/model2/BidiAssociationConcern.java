@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.PropertyInfo;
 
 /**
@@ -53,9 +54,46 @@ public class BidiAssociationConcern<T extends Entity>
         // delegate
         ((Association<T>)delegate).set( value );
         
+        // find back association
+        PropertyBase backAssoc = findBackAssociation( context, info(), target );
+
         // find my host entity
         Class hostType = context.getInfo().getType();
         Entity hostEntity = (Entity)context.getCompositePart( hostType );
+
+        // set back reference
+        // Association
+        if (backAssoc instanceof Association) {
+            ((Association)backAssoc).set( value != null ? hostEntity : null );
+        }
+        // ManyAssocation
+        else if (backAssoc instanceof ManyAssociation) {
+            if (value != null) {
+                ((ManyAssociation)backAssoc).add( hostEntity );
+            }
+            else {
+                ((ManyAssociation)backAssoc).remove( hostEntity );                
+            }
+        }
+        else {
+            throw new IllegalStateException( "Unknown association type: " + backAssoc.getClass().getSimpleName() );            
+        }
+    }
+
+    
+    /**
+     * 
+     *
+     * @param context The runtime context of the host entity.
+     * @param propInfo The property of the host {@link Association}.
+     * @param target The target {@link Entity}.
+     * @return The {@link Association} or {@link ManyAssociation} that is the back
+     *         association in the target.
+     */
+    public static <T extends Entity> PropertyBase<T> findBackAssociation( 
+            EntityRuntimeContext context, PropertyInfo propInfo, T target ) {
+        // find my host entity
+        Class hostType = context.getInfo().getType();
         
         // find back association
         Collection<PropertyInfo> propInfos = target.info().getProperties();
@@ -70,7 +108,7 @@ public class BidiAssociationConcern<T extends Entity>
         }
         // multiple
         else if (candidates.size() > 1) {
-            BidiAssociationName assocName = (BidiAssociationName)info().getAnnotation( BidiAssociationName.class );
+            BidiAssociationName assocName = (BidiAssociationName)propInfo.getAnnotation( BidiAssociationName.class );
             if (assocName != null) {
                 backAssocInfo = candidates.stream().filter( i -> i.getName().equals( assocName.value() ) ).findAny()
                         .orElseThrow( () -> new IllegalStateException( "No back assocation found for name: " + assocName.value() ) );
@@ -87,24 +125,7 @@ public class BidiAssociationConcern<T extends Entity>
             backAssocInfo = candidates.get( 0 );
         }
 
-        // set back reference
-        PropertyBase backAssoc = backAssocInfo.get( target );
-        // Association
-        if (backAssoc instanceof Association) {
-            ((Association)backAssoc).set( value != null ? hostEntity : null );
-        }
-        // ManyAssocation
-        else if (backAssoc instanceof ManyAssociation) {
-            if (value != null) {
-                ((ManyAssociation)backAssoc).add( hostEntity );
-            }
-            else {
-                ((ManyAssociation)backAssoc).remove( hostEntity );                
-            }
-        }
-        else {
-            throw new IllegalStateException( "Unknown association type: " + backAssocInfo.getClass().getSimpleName() );            
-        }
+        return backAssocInfo.get( target );
     }
     
 }
