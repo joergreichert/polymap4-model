@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.runtime;
 
+import java.lang.annotation.Annotation;
+
 import org.polymap.model2.Composite;
 import org.polymap.model2.Immutable;
 import org.polymap.model2.NameInStore;
@@ -89,5 +91,7 @@ public interface PropertyInfo<T> {
      * to get/set the value of the property.
      */
     public <P extends PropertyBase<T>> P get( Composite composite );
+
+    public <A extends Annotation> A getAnnotation( Class<A> type );
     
 }

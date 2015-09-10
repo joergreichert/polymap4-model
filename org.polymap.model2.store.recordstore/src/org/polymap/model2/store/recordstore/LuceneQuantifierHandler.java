@@ -130,15 +130,16 @@ class LuceneQuantifierHandler
                     .setMaxResults( 1 );
             
             ResultSet lengthResult = builder.store.find( query );
-            int result = 0;
+            Integer result = 0;
             if (lengthResult.count() > 0) {
                 IRecordState biggest = lengthResult.get( 0 );
                 result = biggest.get( lengthFieldname );
             }
             log.debug( "    LUCENE: maxLength: " + result + " (" + timer.elapsedTime() + "ms)" );
-            return result;
+            return result != null ? result : 0;
         }
         catch (Exception e) {
+            log.info( "", e );
             throw new RuntimeException( e );
         }
     }

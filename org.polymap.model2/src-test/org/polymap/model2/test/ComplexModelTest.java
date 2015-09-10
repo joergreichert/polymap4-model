@@ -116,6 +116,28 @@ public abstract class ComplexModelTest
     }
 
     
+    public void testBidiAssociation() {
+        // create entity
+        Company company = uow.createEntity( Company.class, null );
+        Employee employee = uow.createEntity( Employee.class, null );
+
+        // set
+        employee.company.set( company );
+        assertSame( company, employee.company.get() );
+
+        // check back reference
+        assertEquals( 1, company.employees.size() );
+        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
+        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
+
+        // remove
+        employee.company.set( null );
+
+        // check back reference
+        assertEquals( 0, company.employees.size() );
+    }
+
+    
     public void testCompositeProperty() {
         Company company = uow.createEntity( Company.class, null );
         

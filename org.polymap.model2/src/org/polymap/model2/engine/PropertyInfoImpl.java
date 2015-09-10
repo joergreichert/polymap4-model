@@ -1,10 +1,10 @@
 /* 
  * polymap.org
- * Copyright 2012, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2015, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
+ * published by the Free Software Foundation; either version 3.0 of
  * the License, or (at your option) any later version.
  *
  * This software is distributed in the hope that it will be useful,
@@ -14,6 +14,7 @@
  */
 package org.polymap.model2.engine;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 
@@ -124,6 +125,11 @@ public class PropertyInfoImpl<T>
         catch (IllegalAccessException e) {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation( Class<A> type ) {
+        return field.getAnnotation( type );
     }
     
 }
