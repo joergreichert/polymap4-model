@@ -22,6 +22,8 @@ import org.polymap.model2.store.recordstore.RecordStoreAdapter;
 import org.polymap.model2.test.Company;
 import org.polymap.model2.test.ComplexModelTest;
 import org.polymap.model2.test.Employee;
+import org.polymap.model2.test.Female;
+import org.polymap.model2.test.Male;
 import org.polymap.recordstore.IRecordStore;
 import org.polymap.recordstore.lucene.LuceneRecordStore;
 
@@ -48,7 +50,7 @@ public class LuceneComplexModelTest
         store = new LuceneRecordStore();
         repo = EntityRepository.newConfiguration()
                 .store.set( new RecordStoreAdapter( store ) )
-                .entities.set( new Class[] {Employee.class, Company.class} )
+                .entities.set( new Class[] {Employee.class, Company.class, Male.class, Female.class} )
                 .create();
         uow = repo.newUnitOfWork();
     }

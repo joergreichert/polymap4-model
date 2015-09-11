@@ -14,6 +14,8 @@
  */
 package org.polymap.model2;
 
+import static org.polymap.model2.BidiBackAssociationFinder.findBackAssociation;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -40,7 +42,7 @@ public class ComputedBidiAssocation<T extends Entity>
     public T get() {
         EntityRepository repo = composite.context.getRepository();
         Entity template = (Entity)Expressions.template( info.getType(), repo );
-        PropertyBase<Entity> backAssoc = BidiAssociationConcern.findBackAssociation( composite.context, info, template );
+        PropertyBase<Entity> backAssoc = findBackAssociation( composite.context, info, template );
         
         UnitOfWork uow = composite.context.getUnitOfWork();
         // ManyAssociation

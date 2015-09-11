@@ -19,62 +19,87 @@ import static org.polymap.model2.BidiBackAssociationFinder.findBackAssociation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.polymap.model2.runtime.ValueInitializer;
+
 /**
- * This {@link Association} concern maintains the back reference of a bidirectional
- * association. The back reference can be an {@link Association} or a
+ * This {@link ManyAssociation} concern maintains the back reference of a
+ * bidirectional association. The back reference can be an {@link Association} or a
  * {@link ManyAssociation}. If multiple possible back references exists then
  * {@link BidiAssociationName} annotation can be used to choose the one to use.
  *
- * @see BidiManyAssociationConcern
+ * @see BidiAssociationConcern
  * @see BidiAssociationName
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class BidiAssociationConcern<T extends Entity>
+public class BidiManyAssociationConcern<T extends Entity>
         extends PropertyConcernBase<T> 
-        implements AssociationConcern<T> {
+        implements PropertyConcern<T>, ManyAssociation<T> {
 
-    private static Log log = LogFactory.getLog( BidiAssociationConcern.class );
+    private static Log log = LogFactory.getLog( BidiManyAssociationConcern.class );
 
     
     @Override
     public T get() {
-        return ((Association<T>)delegate).get();
+        throw new RuntimeException( "not implemented." );
     }
-
     
     @Override
     public void set( T value ) {
-        // value == null signals that association is removed, so we use current value as target
-        T target = value != null ? value : get();
+        throw new RuntimeException( "not implemented." );
+    }
 
-        Entity currentValue = ((Association)delegate).get();
+    @Override
+    public T createValue( ValueInitializer<T> initializer ) {
+        throw new RuntimeException( "not implemented." );
+    }
+
+    
+    protected ManyAssociation delegate() {
+        return (ManyAssociation)delegate;
+    }
+
+    @Override
+    public boolean add( T element ) {
         // avoid ping-pong between double-sided bidi associations
-        if (currentValue == value) {
-            return;
+        if (delegate().contains( element )) {
+            return false;
         }
-        // check reset without prior remove old association
-        if (value != null && currentValue != null) {
-            throw new IllegalStateException( "Association is not null currently. Call set( null) before setting another association." );
+        else {
+            delegate().add( element );
+            updateBackReference( element, true );
+            return true;
         }
-        
-        // delegate
-        ((Association<T>)delegate).set( value );
-        
+    }
+
+
+    @Override
+    public boolean remove( Object element ) {
+        // avoid ping-pong between double-sided bidi associations
+        if (!delegate().contains( element )) {
+            return false;
+        }
+        else {
+            delegate().remove( element );
+            updateBackReference( (T)element, false );
+            return true;
+        }
+    }
+
+
+    protected void updateBackReference( T target, boolean add ) {
         // find back association
         PropertyBase backAssoc = findBackAssociation( context, info(), target );
 
-        // find my host entity
         Class hostType = context.getInfo().getType();
         Entity hostEntity = (Entity)context.getCompositePart( hostType );
 
-        // set back reference
         // Association
         if (backAssoc instanceof Association) {
-            ((Association)backAssoc).set( value != null ? hostEntity : null );
+            ((Association)backAssoc).set( add ? hostEntity : null );
         }
         // ManyAssocation
         else if (backAssoc instanceof ManyAssociation) {
-            if (value != null) {
+            if (add) {
                 ((ManyAssociation)backAssoc).add( hostEntity );
             }
             else {

@@ -138,6 +138,35 @@ public abstract class ComplexModelTest
     }
 
     
+    public void testBidiManyAssociation() {
+        // create entity
+        Male man = uow.createEntity( Male.class, null );
+        Male man2 = uow.createEntity( Male.class, null );
+        Female woman = uow.createEntity( Female.class, null );
+
+        // set
+        man.friends.add( woman );
+
+        // check back references
+        assertEquals( 1, man.friends.size() );
+        assertEquals( 1, woman.friends.size() );
+        assertSame( woman, Iterables.getOnlyElement( man.friends ) );
+        assertSame( man, Iterables.getOnlyElement( woman.friends ) );
+        
+        // remove
+        woman.friends.remove( man );
+        assertEquals( 0, man.friends.size() );
+        assertEquals( 0, woman.friends.size() );
+        
+        // man2
+        man.friends.add( woman );
+        woman.friends.add( man2 );
+        assertEquals( 1, man.friends.size() );
+        assertEquals( 1, man2.friends.size() );
+        assertEquals( 2, woman.friends.size() );
+    }
+
+    
     public void testComputedBidiAssociation() {
         // create entity
         Company company = uow.createEntity( Company.class, null );
