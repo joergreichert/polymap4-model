@@ -131,8 +131,8 @@ public class FeatureStoreUnitOfWork
                     ff.id( Collections.singleton( ff.featureId( (String)id ) ) ) );
             it = features.features();
             Feature feature = it.hasNext() ? it.next() : null;
-            assert feature != null : "Possible BUG: No feature found for id: " + id;
-            return new FeatureCompositeState( feature, this );
+            //assert feature != null : "Possible BUG: No feature found for id: " + id;
+            return feature != null ? new FeatureCompositeState( feature, this ) : null;
         }
         catch (Exception e) {
             throw new ModelRuntimeException( e );
@@ -175,7 +175,7 @@ public class FeatureStoreUnitOfWork
 
     @Override
     public StoreResultSet executeQuery( Query query ) {
-        assert query.expression == null || query.expression instanceof Filter : "Wrong query expression type: " + query.expression;
+        assert query.expression == null || query.expression instanceof FilterWrapper : "Wrong query expression type: " + query.expression;
         try {
             // schema
             FeatureSource fs = featureSource( query.resultType() );

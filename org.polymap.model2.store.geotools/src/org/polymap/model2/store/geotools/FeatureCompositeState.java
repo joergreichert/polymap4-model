@@ -174,7 +174,10 @@ class FeatureCompositeState
             ArrayList<Property> stack = Lists.newArrayList( (Property)propState );
             while (!stack.isEmpty() && isNull) {
                 Property prop = stack.remove( stack.size()-1 );
-                if (prop instanceof ComplexAttribute) {
+                if (prop == null) {
+                    
+                }
+                else if (prop instanceof ComplexAttribute) {
                     stack.addAll( ((ComplexAttribute)prop).getProperties() );
                 }
                 else if (prop instanceof Attribute) {
