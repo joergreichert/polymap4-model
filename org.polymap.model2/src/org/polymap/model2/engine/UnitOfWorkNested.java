@@ -110,8 +110,9 @@ public class UnitOfWorkNested
     
     @Override
     public void removeEntity( Entity entity ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        assert entity != null : "entity must not be null.";
+        checkOpen();
+        repo.contextOfEntity( entity ).raiseStatus( EntityStatus.REMOVED );
     }
 
 
