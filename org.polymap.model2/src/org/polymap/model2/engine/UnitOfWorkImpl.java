@@ -426,7 +426,7 @@ public class UnitOfWorkImpl
             repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
         modified.clear();
-        commitLock.unlock();
+        commitLock.unlock( true );
     }
 
 
@@ -440,13 +440,13 @@ public class UnitOfWorkImpl
         // discard modified Entities
         modified.clear();
         loaded.clear();
-        commitLock.unlock();
+        commitLock.unlock( true );
     }
 
 
     public void close() {
         if (isOpen()) {
-            commitLock.unlock();
+            commitLock.unlock( false );
             storeUow.close();
             repo = null;
             loaded.clear();

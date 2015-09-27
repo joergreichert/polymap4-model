@@ -15,6 +15,7 @@
 package org.polymap.model2.runtime;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
@@ -31,7 +32,7 @@ public abstract class CommitLockStrategy {
     
     public abstract void lock();
 
-    public abstract void unlock();
+    public abstract void unlock( boolean check );
     
     
     /**
@@ -40,19 +41,24 @@ public abstract class CommitLockStrategy {
     public static class FailOnConcurrentCommit
             extends CommitLockStrategy {
 
-        private ReentrantLock       lock = new ReentrantLock();
+        private AtomicBoolean       locked = new AtomicBoolean( false );
         
         @Override
         public void lock() {
-            if (!lock.tryLock()) {
+            if (!locked.compareAndSet( false, true )) {
                 throw new RuntimeException( "Concurrent prepare/commit detected!" );                
             }
         }
 
         @Override
-        public void unlock() {
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
+        public void unlock( boolean check ) {
+            if (check) {
+                if (!locked.compareAndSet( true, false )) {
+                    throw new RuntimeException( "Concurrent prepare/commit detected!" );                
+                }                
+            }
+            else {
+                locked.set( false );
             }
         }
     }
@@ -102,7 +108,7 @@ public abstract class CommitLockStrategy {
         }
 
         @Override
-        public void unlock() {
+        public void unlock( boolean check ) {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
@@ -121,7 +127,7 @@ public abstract class CommitLockStrategy {
         }
 
         @Override
-        public void unlock() {
+        public void unlock( boolean check ) {
         }
     }
     

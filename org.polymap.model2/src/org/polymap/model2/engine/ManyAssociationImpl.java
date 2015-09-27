@@ -81,6 +81,11 @@ class ManyAssociationImpl<T extends Entity>
 
     @Override
     public boolean add( T elm ) {
+        assert elm != null;
+        // make sure that elm belongs to my UoW; it would not break here but
+        // on BidiAssociationConcern and/or maybe elsewhere that depends on Entity.equals()
+        assert elm == context.getUnitOfWork().entity( elm ) : "Entity does no belong to this UnitOfWork.";
+        
         return storeProp.add( elm.id() );
     }
 

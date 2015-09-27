@@ -210,8 +210,7 @@ public class SimpleCache<K,V>
 
     @Override
     public void close() {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        entries = null;
     }
 
     @Override

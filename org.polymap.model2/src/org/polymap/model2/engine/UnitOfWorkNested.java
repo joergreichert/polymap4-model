@@ -230,6 +230,8 @@ public class UnitOfWorkNested
 
     @Override
     public void prepare() throws IOException, ConcurrentEntityModificationException {
+        checkOpen();
+        commitLock.lock();
         prepareResult = null;
         for (Entity entity : modified.values()) {
             // created
@@ -284,19 +286,23 @@ public class UnitOfWorkNested
             repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
         modified.clear();
+        commitLock.unlock( true );
     }
 
 
     @Override
     public void rollback() throws ModelRuntimeException {
+        checkOpen();
         prepareResult = null;
         loaded.clear();
         modified.clear();
+        commitLock.unlock( true );
     }
 
 
     public void close() {
         if (isOpen()) {
+            commitLock.unlock( false );
             parent = null;
             repo = null;
             loaded = null;

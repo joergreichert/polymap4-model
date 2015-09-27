@@ -45,7 +45,9 @@ public class LucenePerformanceTest
 
     protected void setUp() throws Exception {
         super.setUp();
-        store = new LuceneRecordStore();
+        store = LuceneRecordStore.newConfiguration()
+                //.documentCache.put( new SimpleCacheManager() )
+                .create();
         repo = EntityRepository.newConfiguration()
                 .store.set( new RecordStoreAdapter( store ) )
                 .entities.set( new Class[] {Employee.class, Company.class} )

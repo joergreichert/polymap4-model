@@ -55,7 +55,7 @@ public abstract class PerformanceTest
 
     public void testPerformance() throws Exception {
         logHeap();
-        Timer timer = new Timer();
+        Timer timer = Timer.startNow();
         int loops = 1000;
         for (int i=0; i<loops; i++) {
             Employee employee = uow.createEntity( Employee.class, null );
@@ -74,12 +74,28 @@ public abstract class PerformanceTest
         timer.start();
         UnitOfWork uow2 = repo.newUnitOfWork();
         ResultSet<Employee> results = uow2.query( Employee.class ).execute();
+        log.info( "Query all time: " + timer.elapsedTime() + "ms" );
 
+        timer.start();
         for (Employee employee : results) {
             int jap = employee.jap.get();
-            assert jap >= 0 && jap <= results.size() : "jap = " + jap + ", result.size() = " + results.size();
+            jap = employee.jap.get();
+            //assert jap >= 0 && jap <= results.size() : "jap = " + jap + ", result.size() = " + results.size();
         }
         log.info( "Load time: " + timer.elapsedTime() + "ms" );
+        logHeap();
+
+        //
+        timer.start();
+        UnitOfWork uow3 = repo.newUnitOfWork();
+        Employee one = uow3.query( Employee.class ).maxResults( 1 ).execute().stream().findAny().get();
+        log.info( "Query one time: " + timer.elapsedTime() + "ms" );
+        
+        for (int i=0; i<loops; i++) {
+            UnitOfWork uow4 = repo.newUnitOfWork();
+            int jap = uow4.entity( one ).jap.get();
+        }
+        log.info( "Load one time: " + timer.elapsedTime() + "ms" );
         logHeap();
     }
 

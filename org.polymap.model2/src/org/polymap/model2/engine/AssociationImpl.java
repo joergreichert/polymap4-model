@@ -64,6 +64,10 @@ class AssociationImpl<T extends Entity>
     
     @Override
     public void set( T value ) {
+        // make sure that elm belongs to my UoW; it would not break here but
+        // on BidiAssociationConcern and/or maybe elsewhere that depends on Entity.equals()
+        assert value == null || value == context.getUnitOfWork().entity( value ) : "Entity does no belong to this UnitOfWork.";
+        
         storeProp.set( value != null ? value.id() : null );
     }
 

@@ -77,12 +77,13 @@ public abstract class ComplexModelTest
     }
     
 
-    public void testManyAssociation() {
+    public void testManyAssociationAdd() {
         // create entity
         Company company = uow.createEntity( Company.class, null );
         Employee employee = uow.createEntity( Employee.class, null );
         company.employees.add( employee );
         
+        // check uncommitted
         assertEquals( 1, company.employees.size() );
         assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
         assertSame( employee, Iterables.getOnlyElement( company.employees ) );
@@ -94,25 +95,58 @@ public abstract class ComplexModelTest
         Company company2 = uow2.entity( Company.class, company.id() );
         log.info( "Company: " + company2 );
 
-        // check
+        // check committed
         assertEquals( 1, company2.employees.size() );
-//        assertEquals( employee, Iterables.getOnlyElement( company2.employees ) );
         assertNotSame( employee, Iterables.getOnlyElement( company2.employees ) );
         assertEquals( employee.id(), company.employees.stream().findFirst().get().id() );
+    }
+
+    
+    public void testManyAssociationModify() {
+        // create entity
+        Company company = uow.createEntity( Company.class, null );
+        Employee employee = uow.createEntity( Employee.class, null );
+        company.employees.add( employee );
         
-        // modify
+        uow.commit();
+
+        // add another
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Company company2 = uow2.entity( company );
         Employee employee2 = uow2.createEntity( Employee.class, null );
         company2.employees.add( employee2 );
+
+        // check uncommitted
+        assertEquals( 2, company2.employees.size() );
+        
         uow2.commit();
 
-        // fetch
+        // check committed
         UnitOfWork uow3 = repo.newUnitOfWork();
-        Company company3 = uow3.entity( Company.class, company.id() );
-        log.info( "Company: " + company3 );
-
+        Company company3 = uow2.entity( company );
         assertEquals( 2, company3.employees.size() );
-//        assertEquals( employee, Iterables.getOnlyElement( company3.employees ) );
-//        assertSame( employee, Iterables.getOnlyElement( company3.employees ) );
+    }
+
+    
+    public void testManyAssociationRemove() {
+        // create entity
+        Company company = uow.createEntity( Company.class, null );
+        Employee employee = uow.createEntity( Employee.class, null );
+        company.employees.add( employee );        
+        uow.commit();
+
+        // remove
+        company.employees.remove( employee );
+        
+        // check uncommitted
+        assertEquals( 0, company.employees.size() );
+        
+        uow.commit();
+        
+        // check committed
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Company company2 = uow2.entity( company );
+        assertEquals( 0, company2.employees.size() );
     }
 
     
