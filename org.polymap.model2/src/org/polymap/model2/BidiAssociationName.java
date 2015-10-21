@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.FIELD, ElementType.TYPE } )
+@Target( { ElementType.FIELD } )
 @Documented
 public @interface BidiAssociationName {
 
