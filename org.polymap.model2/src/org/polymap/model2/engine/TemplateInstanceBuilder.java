@@ -183,7 +183,7 @@ public final class TemplateInstanceBuilder {
         }        
 
         @Override
-        public T createValue( ValueInitializer<T> initializer ) {
+        public <U extends T> U createValue( ValueInitializer<U> initializer ) {
             throw new ModelRuntimeException( "Calling createValue() on a query template is not allowed." );
         }
     }
@@ -229,7 +229,7 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public T createElement( ValueInitializer<T> initializer ) {
+        public <U extends T> U createElement( ValueInitializer<U> initializer ) {
             throw new ModelRuntimeException( "Method is not allowed on query template" );
         }
 
@@ -298,7 +298,7 @@ public final class TemplateInstanceBuilder {
         }
 
         @Override
-        public T createValue( ValueInitializer<T> initializer ) {
+        public <U extends T> U createValue( ValueInitializer<U> initializer ) {
             throw new ModelRuntimeException( "Calling createValue() on a query template is not allowed." );
         }
 

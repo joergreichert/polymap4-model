@@ -63,7 +63,7 @@ final class ConstraintsCollectionInterceptor<T>
     }
 
     @Override
-    public T createElement( ValueInitializer<T> initializer ) {
+    public <U extends T> U createElement( ValueInitializer<U> initializer ) {
         if (isImmutable) {
             throw new ModelRuntimeException( "Property is @Immutable: " + fullPropName() );
         }

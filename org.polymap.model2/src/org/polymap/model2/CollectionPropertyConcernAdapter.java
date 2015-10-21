@@ -32,7 +32,7 @@ public abstract class CollectionPropertyConcernAdapter<T>
         return (CollectionProperty<T>)delegate;
     }
 
-    public T createElement( ValueInitializer<T> initializer ) {
+    public <U extends T> U createElement( ValueInitializer<U> initializer ) {
         return delegate().createElement( initializer );
     }
 

@@ -86,6 +86,19 @@ class RecordCompositeState
     }
 
     @Override
+    public Class<? extends Composite> compositeInstanceType() {
+        try {
+            // field is written by CompositeCollectionPropertyImpl.createValue() or
+            // CompositePropertyImpl.createValue()
+            String classname = state.get( basename.composite( TYPE_KEY ).get() );
+            return (Class<? extends Composite>)Class.forName( classname );
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
     public Object getUnderlying() {
         // a non-Entity Composite property does not have an underlying representation 
         assert basename == FieldnameBuilder.EMPTY;
@@ -129,6 +142,11 @@ class RecordCompositeState
         protected PropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
             this.info = info;
             this.fieldname = parentname.composite( info.getNameInStore() );
+        }
+
+        public CompositeState createValue( Class actualType ) {
+            // XXX Auto-generated method stub
+            throw new RuntimeException( "not yet implemented." );
         }
 
         public Object get() {
@@ -179,8 +197,9 @@ class RecordCompositeState
         }
         
         @Override
-        public CompositeState createValue() {
+        public CompositeState createValue( Class actualType ) {
             state.put( fieldname.composite( "_id_" ).get(), "created" );
+            state.put( fieldname.composite( TYPE_KEY ).get(), actualType.getName() );
             return new RecordCompositeState( state, fieldname );
         }
 
@@ -204,7 +223,7 @@ class RecordCompositeState
         }
 
         @Override
-        public Object createValue() {
+        public CompositeState createValue( Class actualType ) {
             throw new RuntimeException( "createValue() is not allowed for primitive value properties." );
         }
 
@@ -286,7 +305,7 @@ class RecordCompositeState
     /**
      * 
      */
-    class CompositeCollectionPropertyImpl
+    protected class CompositeCollectionPropertyImpl
             extends CollectionPropertyImpl {
 
         protected CompositeCollectionPropertyImpl( PropertyInfo info, FieldnameBuilder parentname ) {
@@ -294,9 +313,11 @@ class RecordCompositeState
         }
 
         @Override
-        public Object createValue() {
-            RecordCompositeState result = new RecordCompositeState( state, fieldname.arrayElement( size() ) );
+        public CompositeState createValue( Class actualType ) {
+            FieldnameBuilder elmBasename = fieldname.arrayElement( size() );
+            RecordCompositeState result = new RecordCompositeState( state, elmBasename );
             state.put( fieldname.arraySize().get(), size() + 1 );
+            state.put( elmBasename.composite( TYPE_KEY ).get(), actualType.getName() );
             return result;
         }
 

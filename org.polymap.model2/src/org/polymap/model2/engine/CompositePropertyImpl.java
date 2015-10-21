@@ -14,11 +14,14 @@
  */
 package org.polymap.model2.engine;
 
+import java.lang.reflect.ParameterizedType;
+
 import org.polymap.model2.Composite;
 import org.polymap.model2.Property;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.PropertyInfo;
+import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.StoreProperty;
@@ -55,13 +58,12 @@ class CompositePropertyImpl<T extends Composite>
     
     @Override
     public T get() {
-        
         // no synchronization, concurrent init is ok
         if (value == null) {
             CompositeState state = storeProp.get();
             if (state != null) {
                 InstanceBuilder builder = new InstanceBuilder( entityContext );
-                value = builder.newComposite( state, info().getType() );
+                value = builder.newComposite( state, state.compositeInstanceType() /*info().getType()*/ );
             }
             else {
                 value = NULL_VALUE;
@@ -79,14 +81,19 @@ class CompositePropertyImpl<T extends Composite>
 
     
     @Override
-    public T createValue( ValueInitializer<T> initializer ) {
-        T result = get();
+    public <U extends T> U createValue( ValueInitializer<U> initializer ) {
+        U result = (U)get();
         if (result == null) {
             synchronized (this) {
-                CompositeState state = storeProp.createValue();
+                Class actualType = initializer instanceof TypedValueInitializer 
+                        ? (Class)((ParameterizedType)initializer.getClass().getGenericSuperclass()).getActualTypeArguments()[0] 
+                        : info().getType();
+                        
+                CompositeState state = storeProp.createValue( actualType );
                 assert state != null : "Store must not return null as newValue().";
+                        
                 InstanceBuilder builder = new InstanceBuilder( entityContext );
-                result = (T)builder.newComposite( state, info().getType() );
+                result = (U)builder.newComposite( state, actualType );
 
                 if (initializer != null) {
                     try {

@@ -34,6 +34,8 @@ public interface CompositeState {
 
     public Object id();
 
+    public Class<? extends Composite> compositeInstanceType();
+    
     /**
      * 
      * 

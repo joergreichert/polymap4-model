@@ -17,6 +17,7 @@ package org.polymap.model2;
 import java.util.Collection;
 import java.util.Date;
 
+import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 
 /**
@@ -34,14 +35,16 @@ public interface CollectionProperty<T>
      * properties: this method allows the initialize the {@link Composite} value of
      * this property.
      * 
+     * @see TypedValueInitializer
      * @param initializer The initializer to be called for the prototype of the new
-     *        element. This parameter may be null. For {@link Composite} elements
-     *        this allows to initialize the properties, inkluding non-
-     *        {@link Nullable} properties.
+     *        element, or null. For {@link Composite} elements this allows to
+     *        initialize the properties, including non-{@link Nullable} properties.
+     *        Use {@link TypedValueInitializer} to create a Composite value of a
+     *        sub-class of the declared type of the Property.
      * @return The value of this property, or a newly created {@link Composite} that
      *         is set as the new value of this property.
      * @throws IllegalStateException If this is not a Composite collection.
      */
-    public T createElement( ValueInitializer<T> initializer );
+    public <U extends T> U createElement( ValueInitializer<U> initializer );
 
 }

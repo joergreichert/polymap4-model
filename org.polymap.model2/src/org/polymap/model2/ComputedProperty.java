@@ -37,7 +37,7 @@ public abstract class ComputedProperty<T>
     }
 
     @Override
-    public T createValue( ValueInitializer<T> initializer ) {
+    public <U extends T> U createValue( ValueInitializer<U> initializer ) {
         throw new UnsupportedOperationException( "Method needs to be overridden." );
     }
 

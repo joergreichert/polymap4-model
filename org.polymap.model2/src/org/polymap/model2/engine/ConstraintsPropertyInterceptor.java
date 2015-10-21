@@ -76,7 +76,7 @@ final class ConstraintsPropertyInterceptor<T>
 
     
     @Override
-    public T createValue( ValueInitializer<T> initializer ) {
+    public <U extends T> U createValue( ValueInitializer<U> initializer ) {
         return delegate().createValue( initializer );
     }
 
