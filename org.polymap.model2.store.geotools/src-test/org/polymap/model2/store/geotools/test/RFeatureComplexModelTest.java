@@ -17,8 +17,8 @@ package org.polymap.model2.store.geotools.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.polymap.core.data.recordstore.LuceneQueryDialect;
 import org.polymap.core.data.recordstore.RDataStore;
+import org.polymap.core.data.recordstore.lucene.LuceneQueryDialect;
 
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.store.geotools.FeatureStoreAdapter;

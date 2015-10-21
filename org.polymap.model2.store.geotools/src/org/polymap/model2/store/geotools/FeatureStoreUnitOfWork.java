@@ -54,6 +54,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
 
+import org.polymap.core.data.FeatureFactory;
 import org.polymap.core.runtime.Closer;
 
 import org.polymap.model2.Entity;
