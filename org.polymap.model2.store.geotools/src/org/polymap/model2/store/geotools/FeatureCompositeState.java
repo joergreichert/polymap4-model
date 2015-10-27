@@ -81,6 +81,12 @@ class FeatureCompositeState
 
     
     @Override
+    public Class<? extends Composite> compositeInstanceType( Class declaredType ) {
+        return declaredType;
+    }
+
+
+    @Override
     public StoreProperty loadProperty( PropertyInfo info ) {
         // Collection
         if (info.getMaxOccurs() > 1) {
@@ -143,7 +149,7 @@ class FeatureCompositeState
         }
         
         @Override
-        public Object createValue() {
+        public Object createValue( Class actualType ) {
             return info().getDefaultValue();
         }
 
@@ -199,7 +205,8 @@ class FeatureCompositeState
         }
 
         @Override
-        public CompositeState createValue() {
+        public Object createValue( Class actualType ) {
+            assert info.getType().getName().equals( actualType.getName() ) : "Sub-class instances are not supported yet.";
             ComplexAttribute propState = (ComplexAttribute)delegate();
             return new FeatureCompositeState( feature, propState, suow );
         }
@@ -220,7 +227,7 @@ class FeatureCompositeState
         }
         
         @Override
-        public Object createValue() {
+        public Object createValue( Class actualType ) {
             // XXX Auto-generated method stub
             throw new RuntimeException( "not yet implemented." );
         }
