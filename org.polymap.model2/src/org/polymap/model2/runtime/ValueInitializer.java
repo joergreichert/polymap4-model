@@ -22,6 +22,6 @@ package org.polymap.model2.runtime;
 @FunctionalInterface
 public interface ValueInitializer<T> {
     
-    public T initialize( T prototype ) throws Exception;
+    public abstract T initialize( T prototype ) throws Exception;
 
 }

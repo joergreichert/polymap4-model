@@ -18,11 +18,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
+import java.lang.reflect.ParameterizedType;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
+import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.StoreCollectionProperty;
@@ -53,14 +56,19 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
 
     
     @Override
-    public T createElement( ValueInitializer<T> initializer ) {
-        CompositeState state = (CompositeState)storeProp.createValue();
+    public <U extends T> U createElement( ValueInitializer<U> initializer ) {
+        Class actualType = initializer instanceof TypedValueInitializer 
+                ? (Class)((ParameterizedType)initializer.getClass().getGenericSuperclass()).getActualTypeArguments()[0] 
+                : info().getType();
+
+        CompositeState state = (CompositeState)storeProp.createValue( actualType );
+                
         InstanceBuilder builder = new InstanceBuilder( entityContext );
-        Composite value = builder.newComposite( state, info().getType() );
+        Composite value = builder.newComposite( state, (Class<U>)actualType );
         
         if (initializer != null) {
             try {
-                value = initializer.initialize( (T)value );
+                value = initializer.initialize( (U)value );
             }
             catch (RuntimeException e) {
                 throw e;
@@ -75,7 +83,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
         }
         cache.add( (T)value );
         
-        return (T)value;
+        return (U)value;
     }
 
 
@@ -110,7 +118,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 }
             };
         }
-        // not yet cached
+        // not cached yet
         else {
             cache = new ArrayList();
             return new Iterator<T>() {
@@ -123,7 +131,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 public T next() {
                     CompositeState state = (CompositeState)storeIt.next();
                     InstanceBuilder builder = new InstanceBuilder( entityContext );
-                    T result = (T)builder.newComposite( state, info().getType() );
+                    T result = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
                     cache.add( result );
                     return result;
                 }

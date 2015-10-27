@@ -43,9 +43,10 @@ public interface StoreCollectionProperty<T>
      * just {@link PropertyInfo#getDefaultValue()}. For {@link CompositeState} value this
      * is a new {@link CompositeState}.
      * 
+     * @param actualType For {@link Composite} property this is the actual type to create.
      * @return Newly created value for this property.
      */
-    public T createValue();
+    public T createValue( Class actualType );
 
     public PropertyInfo info();
 

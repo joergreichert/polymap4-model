@@ -49,7 +49,7 @@ public class BidiManyAssociationConcern<T extends Entity>
     }
 
     @Override
-    public T createValue( ValueInitializer<T> initializer ) {
+    public <U extends T> U createValue( ValueInitializer<U> initializer ) {
         throw new RuntimeException( "not implemented." );
     }
 

@@ -15,6 +15,7 @@
 package org.polymap.model2.store;
 
 import org.polymap.model2.Association;
+import org.polymap.model2.Composite;
 import org.polymap.model2.runtime.PropertyInfo;
 
 /**
@@ -36,9 +37,10 @@ public interface StoreProperty<T> {
      * just {@link PropertyInfo#getDefaultValue()}. For {@link CompositeState} value this
      * is a new {@link CompositeState}.
      * 
+     * @param actualType For {@link Composite} property this is the actual type to create.
      * @return Newly created value for this property.
      */
-    public T createValue();
+    public T createValue( Class actualType );
 
     public PropertyInfo info();
 }

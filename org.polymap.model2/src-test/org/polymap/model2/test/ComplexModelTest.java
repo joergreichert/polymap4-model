@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.polymap.model2.runtime.EntityRepository;
+import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
 
@@ -123,7 +124,7 @@ public abstract class ComplexModelTest
 
         // check committed
         UnitOfWork uow3 = repo.newUnitOfWork();
-        Company company3 = uow2.entity( company );
+        Company company3 = uow3.entity( company );
         assertEquals( 2, company3.employees.size() );
     }
 
@@ -304,6 +305,51 @@ public abstract class ComplexModelTest
         Address firstAddress2 = Iterables.get( company2.moreAddresses, 0 );
         assertEquals( "Jump", firstAddress2.street.get() );
         assertEquals( 1, (int)firstAddress2.nr.get() );
+    }
+
+
+    public void testCompositeCollectionTypedCreate() {
+        Company company = uow.createEntity( Company.class, null );
+
+        assertEquals( 0, company.fellows.size() );
+
+        Employee employee = company.fellows.createElement( new TypedValueInitializer<Employee>() {
+            public Employee initialize( Employee proto ) throws Exception {
+                proto.jap.set( 100 );
+                return proto;
+            }
+        } );
+        log.info( "Company: " + company );
+        log.info( "fellow: " + employee );
+        assertEquals( 1, company.fellows.size() );
+
+        uow.commit();
+
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Company company2 = uow2.entity( Company.class, company.id() );
+        Employee employee2 = (Employee)Iterables.get( company2.fellows, 0 );
+        assertEquals( new Integer( 100 ), employee2.jap.get() );
+    }
+
+    
+    public void testCompositePropertyTypedCreate() {
+        Company company = uow.createEntity( Company.class, null );
+
+        Employee employee = company.bigFellow.createValue( new TypedValueInitializer<Employee>() {
+            public Employee initialize( Employee proto ) throws Exception {
+                proto.jap.set( 100 );
+                return proto;
+            }
+        } );
+        log.info( "Company: " + company );
+        log.info( "Fellow: " + employee );
+
+        uow.commit();
+
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Company company2 = uow2.entity( Company.class, company.id() );
+        Employee employee2 = (Employee)company2.bigFellow.get();
+        assertEquals( new Integer( 100 ), employee2.jap.get() );
     }
 
     

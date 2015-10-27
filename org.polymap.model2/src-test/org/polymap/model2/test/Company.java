@@ -47,6 +47,10 @@ public class Company
 
     protected ManyAssociation<Employee>     employees;
     
+    protected CollectionProperty<Person>    fellows;
+    
+    protected Property<Person>              bigFellow;
+    
 
     public void addEmployee( final Employee employee ) {
         employees.add( employee );

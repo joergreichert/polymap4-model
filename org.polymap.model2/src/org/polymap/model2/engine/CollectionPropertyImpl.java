@@ -43,7 +43,7 @@ class CollectionPropertyImpl<T>
     }
 
     @Override
-    public T createElement( ValueInitializer<T> initializer ) {
+    public <U extends T> U createElement( ValueInitializer<U> initializer ) {
         throw new RuntimeException( "not yet..." );
     }
 

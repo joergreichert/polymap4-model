@@ -34,7 +34,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.vividsolutions.jts.geom.Point;
 
-import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.store.geotools.FeatureStoreAdapter;
 import org.polymap.model2.test.Employee;
 import org.polymap.model2.test.SimpleModelTest;
@@ -81,12 +80,13 @@ public class FeatureSimpleModelTest
         store = new FeatureStoreAdapter( ds )
                 .createOrUpdateSchemas.put( true );
         
-        repo = EntityRepository.newConfiguration()
-                .store.set( store )
-                .entities.set( new Class[] {Employee.class} )
-                .create();
-        
-        uow = repo.newUnitOfWork();
+        throw new RuntimeException( "Employee is no longer simple. Refactor tests before running with FeatureStore." );
+//        repo = EntityRepository.newConfiguration()
+//                .store.set( store )
+//                .entities.set( new Class[] {Employee.class} )
+//                .create();
+//        
+//        uow = repo.newUnitOfWork();
     }
 
     

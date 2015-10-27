@@ -17,6 +17,7 @@ package org.polymap.model2;
 import java.util.Date;
 
 import org.polymap.model2.runtime.ModelRuntimeException;
+import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 
 /**
@@ -39,6 +40,7 @@ public interface Property<T>
      */
     public T get();
 
+    
     /**
      * Creates a new value for this property if the current value is null.
      * <p/>
@@ -46,16 +48,19 @@ public interface Property<T>
      * to the value created by the {@link Defaults} annotation. For {@link Composite}
      * types a new instance is created with properties set to their default values.
      * <p/>
-     * The initializer allows to provide a default value for primitive types. For
-     * {@link Composite} types it gets called to initialize the properties of the
-     * instance, including non-{@link Nullable} properties.
+     * The <code>initializer</code> allows to provide a default value for primitive
+     * types. For {@link Composite} types it gets called to initialize the properties
+     * of the instance, including non-{@link Nullable} properties. Use
+     * {@link TypedValueInitializer} to create a Composite value of a sub-class of
+     * the declared type of the Property.
      * 
      * @param initializer Change/set primitive values and set properties of a
-     *        {@link Composite} value. Can be null.
+     *        {@link Composite} value. Can be null. Use {@link TypedValueInitializer}
+     *        to create a sub-class.
      * @return The newly created (and initialized) value if the current value is
      *         <code>null</code>, or the current value.
      */
-    public T createValue( ValueInitializer<T> initializer );
+    public <U extends T> U createValue( ValueInitializer<U> initializer );
 
     /**
      * Modifies the value of this property.
