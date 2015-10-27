@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.runtime.event;
 
+import java.util.Collection;
+
 import java.beans.PropertyChangeEvent;
 
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
@@ -29,8 +31,8 @@ import org.polymap.model2.runtime.PropertyInfo;
 import org.polymap.model2.runtime.ValueInitializer;
 
 /**
- * Fires {@link PropertyChangeEvent}s via {@link EventManager} when a
- * {@link Property} changes.
+ * Fires {@link PropertyChangeEvent}s via {@link EventManager} when the value of a
+ * property changes. Supports {@link Property} and {@link ManyAssociation}.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -62,6 +64,40 @@ public class PropertyChangeSupport
        boolean result = ((ManyAssociation)delegate).add( e );
        fireEvent( null, e );
        return result;
+    }
+
+    @Override
+    public boolean remove( Object e ) {
+       boolean result = ((ManyAssociation)delegate).remove( e );
+       fireEvent( null, e );
+       return result;
+    }
+
+    @Override
+    public boolean addAll( Collection c ) {
+        boolean result = ((ManyAssociation)delegate).addAll( c );
+        fireEvent( null, null );
+        return result;
+    }
+
+    @Override
+    public boolean removeAll( Collection c ) {
+        boolean result = ((ManyAssociation)delegate).removeAll( c );
+        fireEvent( null, null );
+        return result;
+    }
+
+    @Override
+    public boolean retainAll( Collection c ) {
+        boolean result = ((ManyAssociation)delegate).retainAll( c );
+        fireEvent( null, null );
+        return result;
+    }
+
+    @Override
+    public void clear() {
+        ((ManyAssociation)delegate).clear();
+        fireEvent( null, null );
     }
 
     protected void fireEvent( Object oldValue, Object newValue ) {

@@ -45,6 +45,8 @@ import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.CommitLockStrategy;
+import org.polymap.model2.runtime.Lifecycle;
+import org.polymap.model2.runtime.Lifecycle.State;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
@@ -370,13 +372,24 @@ public class UnitOfWorkImpl
     }
 
 
+    protected void lifecycle( State state ) {
+        for (Entity entity : modified.values()) {
+            if (entity instanceof Lifecycle) {
+                ((Lifecycle)entity).onLifecycleChange( state );
+            }
+        }
+    }
+    
+    
     @Override
     public void prepare() throws IOException, ConcurrentEntityModificationException {
         checkOpen();
         commitLock.lock();
         try {
             prepareResult = null;
+            lifecycle( State.BEFORE_PREPARE );
             storeUow.prepareCommit( modified.values() );
+            lifecycle( State.AFTER_PREPARE );
             prepareResult = PREPARED;
         }
         catch (ModelRuntimeException e) {
@@ -418,6 +431,7 @@ public class UnitOfWorkImpl
             throw new ModelRuntimeException( "UnitOfWork is not prepared successfully for commit." );
         }
         // commit store
+        lifecycle( State.BEFORE_COMMIT );
         storeUow.commit();
         prepareResult = null;
         
@@ -425,6 +439,7 @@ public class UnitOfWorkImpl
         for (Entry<Object,Entity> entry : loaded) {
             repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
+        lifecycle( State.AFTER_COMMIT );
         modified.clear();
         commitLock.unlock( true );
     }
@@ -433,8 +448,9 @@ public class UnitOfWorkImpl
     @Override
     public void rollback() throws ModelRuntimeException {
         checkOpen();
-        // rollback store
+        lifecycle( State.BEFORE_ROLLBACK );
         storeUow.rollback();
+        lifecycle( State.AFTER_ROLLBACK );
         prepareResult = null;
         
         // discard modified Entities

@@ -38,6 +38,7 @@ import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
+import org.polymap.model2.runtime.Lifecycle.State;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.store.CloneCompositeStateSupport;
@@ -233,6 +234,7 @@ public class UnitOfWorkNested
         checkOpen();
         commitLock.lock();
         prepareResult = null;
+        lifecycle( State.BEFORE_PREPARE );
         for (Entity entity : modified.values()) {
             // created
             if (entity.status() == EntityStatus.CREATED) {
@@ -261,6 +263,7 @@ public class UnitOfWorkNested
                 storeUow().reincorparateEntityState( parentState, clonedState );
             }
         }
+        lifecycle( State.AFTER_PREPARE );
         prepareResult = PREPARED;
     }
 
@@ -282,9 +285,11 @@ public class UnitOfWorkNested
         prepareResult = null;
         
         // reset Entity status
+        lifecycle( State.BEFORE_COMMIT );
         for (Entry<Object,Entity> entry : loaded) {
             repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
         }
+        lifecycle( State.AFTER_COMMIT );
         modified.clear();
         commitLock.unlock( true );
     }
@@ -293,10 +298,12 @@ public class UnitOfWorkNested
     @Override
     public void rollback() throws ModelRuntimeException {
         checkOpen();
+        lifecycle( State.BEFORE_ROLLBACK );
+        lifecycle( State.AFTER_ROLLBACK );
         prepareResult = null;
         loaded.clear();
         modified.clear();
-        commitLock.unlock( true );
+        commitLock.unlock( false );
     }
 
 

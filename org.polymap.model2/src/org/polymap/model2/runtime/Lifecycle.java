@@ -14,9 +14,13 @@
  */
 package org.polymap.model2.runtime;
 
+import org.polymap.model2.Entity;
+
 /**
+ * An {@link Entity} can implement this interface in order to get lifecycle events.
+ * <p/>
+ * EXPERIMENTAL: This is work in progress. Not well tested. API may change.
  * 
- * @deprecated Yet to be supported by the engine.
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public interface Lifecycle {
@@ -28,11 +32,14 @@ public interface Lifecycle {
         AFTER_COMMIT,
         BEFORE_ROLLBACK,
         AFTER_ROLLBACK,
+        /** @deprecated Yet to be supported by the engine. */
         AFTER_LOADED,
+        /** @deprecated Yet to be supported by the engine. */
         AFTER_CREATED,
+        /** @deprecated Yet to be supported by the engine. */
         BEFORE_REMOVED
     }
     
-    public void lifecycleCallback( State state );
+    public void onLifecycleChange( State state );
 
 }
