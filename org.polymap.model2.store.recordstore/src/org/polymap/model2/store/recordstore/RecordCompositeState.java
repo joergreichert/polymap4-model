@@ -86,12 +86,14 @@ class RecordCompositeState
     }
 
     @Override
-    public Class<? extends Composite> compositeInstanceType() {
+    public Class<? extends Composite> compositeInstanceType( Class declared ) {
         try {
             // field is written by CompositeCollectionPropertyImpl.createValue() or
             // CompositePropertyImpl.createValue()
             String classname = state.get( basename.composite( TYPE_KEY ).get() );
-            return (Class<? extends Composite>)Class.forName( classname );
+            return classname != null && !declared.getName().equals( classname )
+                    ? (Class<? extends Composite>)declared.getClassLoader().loadClass( classname )
+                     : declared;
         }
         catch (ClassNotFoundException e) {
             throw new RuntimeException( e );
@@ -199,7 +201,10 @@ class RecordCompositeState
         @Override
         public CompositeState createValue( Class actualType ) {
             state.put( fieldname.composite( "_id_" ).get(), "created" );
-            state.put( fieldname.composite( TYPE_KEY ).get(), actualType.getName() );
+            //
+            if (!info.getType().getName().equals( actualType.getName() )) {
+                state.put( fieldname.composite( TYPE_KEY ).get(), actualType.getName() );
+            }
             return new RecordCompositeState( state, fieldname );
         }
 
@@ -317,7 +322,10 @@ class RecordCompositeState
             FieldnameBuilder elmBasename = fieldname.arrayElement( size() );
             RecordCompositeState result = new RecordCompositeState( state, elmBasename );
             state.put( fieldname.arraySize().get(), size() + 1 );
-            state.put( elmBasename.composite( TYPE_KEY ).get(), actualType.getName() );
+            //
+            if (!info.getType().getName().equals( actualType.getName() )) {
+                state.put( elmBasename.composite( TYPE_KEY ).get(), actualType.getName() );
+            }
             return result;
         }
 

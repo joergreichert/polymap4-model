@@ -118,7 +118,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 }
             };
         }
-        // not yet cached
+        // not cached yet
         else {
             cache = new ArrayList();
             return new Iterator<T>() {
@@ -131,7 +131,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 public T next() {
                     CompositeState state = (CompositeState)storeIt.next();
                     InstanceBuilder builder = new InstanceBuilder( entityContext );
-                    T result = (T)builder.newComposite( state, state.compositeInstanceType() /*info().getType()*/ );
+                    T result = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
                     cache.add( result );
                     return result;
                 }

@@ -16,6 +16,7 @@ package org.polymap.model2.store;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
+import org.polymap.model2.Property;
 import org.polymap.model2.runtime.PropertyInfo;
 
 /**
@@ -34,7 +35,13 @@ public interface CompositeState {
 
     public Object id();
 
-    public Class<? extends Composite> compositeInstanceType();
+    /**
+     * Returns the actual type of the {@link Composite} instance. This might be a
+     * sub-class of the type declared by the {@link Property}.
+     *
+     * @param declaredType
+     */
+    public Class<? extends Composite> compositeInstanceType( Class declaredType );
     
     /**
      * 

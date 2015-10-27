@@ -63,7 +63,7 @@ class CompositePropertyImpl<T extends Composite>
             CompositeState state = storeProp.get();
             if (state != null) {
                 InstanceBuilder builder = new InstanceBuilder( entityContext );
-                value = builder.newComposite( state, state.compositeInstanceType() /*info().getType()*/ );
+                value = builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
             }
             else {
                 value = NULL_VALUE;
