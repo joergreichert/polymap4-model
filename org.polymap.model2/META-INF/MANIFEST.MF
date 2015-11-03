@@ -8,7 +8,8 @@ Bundle-Vendor: polymap.org
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.10.0",
- org.polymap.core;bundle-version="4.0.0";resolution:=optional
+ org.polymap.core;bundle-version="4.0.0";resolution:=optional,
+ org.junit;bundle-version="4.11.0";resolution:=optional
 Bundle-ClassPath: .,
  lib/commons-io-2.4.jar,
  lib/commons-lang3-3.3.2.jar,
