@@ -22,7 +22,7 @@
 			</modules>
 		</profile>
 		<profile>
-			<id>recordstore</id>
+			<id>model-recordstore</id>
 			<activation>
       				<activeByDefault>true</activeByDefault>
 			</activation>
