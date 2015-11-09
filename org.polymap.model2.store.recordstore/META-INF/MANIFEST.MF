@@ -7,6 +7,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: .
 Require-Bundle: org.polymap.model2;bundle-version="3.0.0",
  org.polymap.core;bundle-version="4.0.0",
- org.polymap.core.recordstore;bundle-version="4.0.0";visibility:=reexport
+ org.polymap.core.recordstore;bundle-version="4.0.0";visibility:=reexport,
+ org.junit;bundle-version="4.11.0";resolution:=optional
 Import-Package: org.apache.commons.logging
 Export-Package: org.polymap.model2.store.recordstore
