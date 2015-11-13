@@ -131,5 +131,10 @@ public class PropertyInfoImpl<T>
     public <A extends Annotation> A getAnnotation( Class<A> type ) {
         return field.getAnnotation( type );
     }
+
+    @Override
+    public String toString() {
+        return "PropertyInfoImpl[" + field + "]";
+    }
     
 }
