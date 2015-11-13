@@ -78,6 +78,7 @@ public abstract class PerformanceTest
 
         timer.start();
         for (Employee employee : results) {
+            @SuppressWarnings("unused")
             int jap = employee.jap.get();
             jap = employee.jap.get();
             //assert jap >= 0 && jap <= results.size() : "jap = " + jap + ", result.size() = " + results.size();
@@ -93,6 +94,7 @@ public abstract class PerformanceTest
         
         for (int i=0; i<loops; i++) {
             UnitOfWork uow4 = repo.newUnitOfWork();
+            @SuppressWarnings("unused")
             int jap = uow4.entity( one ).jap.get();
         }
         log.info( "Load one time: " + timer.elapsedTime() + "ms" );
