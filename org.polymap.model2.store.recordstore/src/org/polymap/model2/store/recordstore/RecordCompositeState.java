@@ -231,11 +231,11 @@ class RecordCompositeState
                             }
                         }
                         for(String key : keys) {
-//                            if(!key.endsWith( "/_id_" )) {
+                            if(!key.endsWith( "/_id_" )) {
                                 PropertyInfo propInfo = info.getProperty( key.substring( key.lastIndexOf( "/" )+1) );
                                 StoreProperty prop = compState.loadProperty( propInfo );
                                 prop.set( newState.get( key ) );
-//                            }
+                            }
                         }
                     }
                 }
